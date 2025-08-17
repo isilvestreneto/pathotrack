@@ -1,3 +1,16 @@
 <resources>
-    <string name="app_name">Android</string>
+    <string name="app_name">PathoTrack</string>
+    <string name="textviewNumeroExame">Número do exame</string>
+    <string name="novoCaso">Novo Caso</string>
+    <string name="paciente">Paciente</string>
+    <string name="nomePaciente">Nome do Paciente</string>
+    <string name="dataNascimento">Data de Nascimento</string>
+    <string name="sexo">Sexo</string>
+    <string name="masculino">Masculino</string>
+    <string name="feminino">Feminino</string>
+    <string name="textViewSus">SUS</string>
+    <string name="dataRequisicao">Data da requisição</string>
+    <string name="etapaAtual">Etapa atual</string>
+    <string name="salvar">Salvar</string>
+    <string name="cancelar">Cancelar</string>
 </resources>
