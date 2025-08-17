@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">PathoTrack</string>
+    <string name="app_name">🦆 PathoTrack</string>
     <string name="textviewNumeroExame">Número do exame</string>
     <string name="novoCaso">Novo Caso</string>
     <string name="paciente">Paciente</string>
@@ -12,5 +12,16 @@
     <string name="dataRequisicao">Data da requisição</string>
     <string name="etapaAtual">Etapa atual</string>
     <string name="salvar">Salvar</string>
-    <string name="cancelar">Cancelar</string>
+    <string name="limparCampos">Limpar campos</string>
+    <string name="selecione_data_nascimento">Selecionar data de nascimento</string>
+    <string name="selecione_data_solicitacao">Selecionar data de solicitação</string>
+    <string name="as_entradas_foram_apagadas">As entradas foram apagadas!</string>
+    <string name="faltou_entrar_com_o_n_mero_do_exame">Faltou entrar com o número do exame!</string>
+    <string name="faltou_entrar_com_o_nome_do_paciente">Faltou entrar com o nome do paciente!</string>
+    <string name="faltou_entrar_com_a_data_de_nascimento">Faltou entrar com a data de nascimento!</string>
+    <string name="faltou_entrar_com_o_n_mero_do_sus">Faltou entrar com o número do SUS</string>
+    <string name="faltou_entrar_com_a_data_de_solicita_o">Faltou entrar com a data de solicitação</string>
+    <string name="faltou_entrar_com_a_etapa">Faltou entrar com a etapa</string>
+    <string name="faltou_selecionar_o_sexo">Faltou selecionar o sexo!</string>
+
 </resources>

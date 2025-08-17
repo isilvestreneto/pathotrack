@@ -2,4 +2,11 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="duck_green">#006400</color>
+    <color name="duck_green_dark">#004d00</color>   <!-- Verde escuro para textos -->
+    <color name="duck_yellow">#FFD700</color>       <!-- Amarelo vibrante para fundo pill -->
+    <color name="duck_yellow_light">#FFF9C4</color> <!-- Amarelo claro para destaques suaves -->
+    <color name="gray_light">#F5F5F5</color>        <!-- Fundo claro alternativo -->
+    <color name="gray_dark">#212121</color>         <!-- Texto secundário / contraste -->
+    <color name="neutral_gray">#9E9E9E</color>
 </resources>
