@@ -1,11 +1,12 @@
-package com.pathotrack.enums;
+package com.pathotrack.domain.enums;
 
 public enum Etapa {
     RECEBIMENTO("Recebimento"),
     MACROSCOPIA("Macroscopia"),
     PROCESSAMENTO("Processamento"),
     CORTE_HISTOLOGICO("Corte histológico"),
-    LAUDO("Laudo");
+    LAUDO("Laudo"),
+    FINALIZADO("Finalizado");
 
     private final String label;
 

@@ -10,10 +10,12 @@
     <string name="feminino">Feminino</string>
     <string name="textViewSus">SUS</string>
     <string name="dataRequisicao">Data da requisição</string>
+    <string name="dataEntrega">Data da entrega</string>
     <string name="etapaAtual">Etapa atual</string>
     <string name="salvar">Salvar</string>
     <string name="limparCampos">Limpar campos</string>
     <string name="selecione_data_nascimento">Selecionar data de nascimento</string>
+    <string name="selecione_data_entrega">Selecionar data de entrega</string>
     <string name="selecione_data_solicitacao">Selecionar data de solicitação</string>
     <string name="as_entradas_foram_apagadas">As entradas foram apagadas!</string>
     <string name="faltou_entrar_com_o_n_mero_do_exame">Faltou entrar com o número do exame!</string>
@@ -21,7 +23,23 @@
     <string name="faltou_entrar_com_a_data_de_nascimento">Faltou entrar com a data de nascimento!</string>
     <string name="faltou_entrar_com_o_n_mero_do_sus">Faltou entrar com o número do SUS</string>
     <string name="faltou_entrar_com_a_data_de_solicita_o">Faltou entrar com a data de solicitação</string>
+    <string name="faltou_entrar_com_a_data_de_entrega">Faltou entrar com a data de entrega</string>
     <string name="faltou_entrar_com_a_etapa">Faltou entrar com a etapa</string>
     <string name="faltou_selecionar_o_sexo">Faltou selecionar o sexo!</string>
+    <string name="exibicaoFiltro">Exibição</string>
+    <string name="ordenarPor">Ordenar por</string>
+    <string name="previsaoText">Previsão</string>
+    <string name="data">10/04/2024</string>
+    <string name="listagem_de_casos">Listagem de casos</string>
+    <string name="nome_autor">Ivanildo Silvestre da Silva Neto</string>
+    <string name="curso">Tecnologia Java</string>
+    <string name="email">isilvestreneto@gmail.com</string>
+    <string name="descricao_app">O PathoTrack é um aplicativo desenvolvido para auxiliar médicos patologistas no gerenciamento de casos clínicos. Ele permite registrar informações de pacientes, acompanhar cada etapa do exame — do recebimento à emissão do laudo — e organizar a lista de casos com filtros e ordenações para facilitar o acompanhamento e priorização.</string>
+    <string name="utfpr">Universidade Tecnológica Federal do Paraná — UTFPR</string>
+    <string name="author_res">Autor</string>
+    <string name="curso_res">Curso</string>
+    <string name="email_res">E-mail</string>
+    <string name="adicionar">Adicionar</string>
+    <string name="sobre">Sobre</string>
 
 </resources>

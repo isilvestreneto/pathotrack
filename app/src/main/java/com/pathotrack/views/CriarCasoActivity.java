@@ -1,5 +1,7 @@
-package com.pathotrack;
+package com.pathotrack.views;
 
+import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ArrayAdapter;
@@ -11,27 +13,33 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.material.datepicker.MaterialDatePicker;
 import com.google.android.material.textfield.MaterialAutoCompleteTextView;
-import com.pathotrack.enums.Etapa;
+import com.pathotrack.R;
+import com.pathotrack.domain.enums.Etapa;
+import com.pathotrack.domain.enums.Sexo;
+import com.pathotrack.utils.ChavesCasoPaciente;
 
-public class CasoActivity extends AppCompatActivity {
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+
+public class CriarCasoActivity extends AppCompatActivity {
 
     EditText editTextDataNascimento, editTextDataSolicitacao, editTextNumeroExame,
-            editTextNomePaciente, editTextSus;
+            editTextNomePaciente, editTextSus, editTextDataEntrega;
     RadioGroup radioGroupSexo;
     MaterialAutoCompleteTextView etapaView;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_caso);
+        setContentView(R.layout.activity_criar_caso);
 
         editTextNumeroExame = findViewById(R.id.editTextNumeroExame);
         editTextNomePaciente = findViewById(R.id.editTextNomePaciente);
-        editTextDataNascimento = findViewById(R.id.editTextData);
+        editTextDataNascimento = findViewById(R.id.editTextDataNascimento);
         radioGroupSexo = findViewById(R.id.radioGroupSexo);
         editTextSus = findViewById(R.id.editTextSus);
-        editTextDataSolicitacao = findViewById(R.id.editTextDate);
+        editTextDataEntrega = findViewById(R.id.editTextDataEntrega);
+        editTextDataSolicitacao = findViewById(R.id.editTextDataSolicitacao);
         etapaView = findViewById(R.id.etEtapaAtual);
 
         editTextDataNascimento.setOnClickListener(v -> {
@@ -40,8 +48,14 @@ public class CasoActivity extends AppCompatActivity {
                             .setTitleText("Selecionar data")
                             .build();
 
-            datePicker.addOnPositiveButtonClickListener(selection ->
-                    editTextDataNascimento.setText(datePicker.getHeaderText())
+            datePicker.addOnPositiveButtonClickListener((selection) -> {
+                        String iso = millisToIso(selection);
+                        String display = millisToDisplay(selection);
+
+                        editTextDataNascimento.setTag(iso);
+                        editTextDataNascimento.setText(display);
+                    }
+
             );
 
             datePicker.show(getSupportFragmentManager(), "DATE_PICKER");
@@ -55,7 +69,30 @@ public class CasoActivity extends AppCompatActivity {
                             .build();
 
             datePicker.addOnPositiveButtonClickListener(selection ->
-                    editTextDataSolicitacao.setText(datePicker.getHeaderText())
+                    {
+                        String iso = millisToIso(selection);
+                        String display = millisToDisplay(selection);
+                        editTextDataSolicitacao.setTag(iso);
+                        editTextDataSolicitacao.setText(display);
+                    }
+            );
+
+            datePicker.show(getSupportFragmentManager(), "DATE_PICKER");
+        });
+
+        editTextDataEntrega.setOnClickListener(v -> {
+            MaterialDatePicker<Long> datePicker =
+                    MaterialDatePicker.Builder.datePicker()
+                            .setTitleText("Selecionar data")
+                            .build();
+
+            datePicker.addOnPositiveButtonClickListener(selection ->
+                    {
+                        String iso = millisToIso(selection);
+                        String display = millisToDisplay(selection);
+                        editTextDataEntrega.setTag(iso);
+                        editTextDataEntrega.setText(display);
+                    }
             );
 
             datePicker.show(getSupportFragmentManager(), "DATE_PICKER");
@@ -77,12 +114,31 @@ public class CasoActivity extends AppCompatActivity {
         etapaView.setOnClickListener(v -> etapaView.showDropDown());
 
         String txt = etapaView.getText() == null ? "" : etapaView.getText().toString().trim();
+    }
 
-        Etapa etapaSelecionada = null;
-
-        if (!txt.isEmpty()) {
-            etapaSelecionada = Etapa.fromLabel(txt);
+    private static LocalDate epochMsToLocalDate(long ms) {
+        // Converte ms -> dias desde 1970-01-01 (UTC) sem passar por timezones
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            long epochDay = Math.floorDiv(ms, 86_400_000L); // 24 * 60 * 60 * 1000
+            return LocalDate.ofEpochDay(epochDay);
         }
+        return null;
+    }
+
+    private static String millisToIso(long ms) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            DateTimeFormatter ISO = DateTimeFormatter.ISO_LOCAL_DATE;        // yyyy-MM-dd
+            return epochMsToLocalDate(ms).format(ISO);
+        }
+        return "";
+    }
+
+    private static String millisToDisplay(long ms) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            DateTimeFormatter BR = DateTimeFormatter.ofPattern("dd/MM/uuuu");
+            return epochMsToLocalDate(ms).format(BR);
+        }
+        return "";
     }
 
     public void salvarValores(View view) {
@@ -145,6 +201,17 @@ public class CasoActivity extends AppCompatActivity {
             return;
         }
 
+        String dataEntrega = editTextDataEntrega.getText().toString();
+
+        if (dataEntrega == null || dataEntrega.trim().isEmpty()) {
+            Toast.makeText(this,
+                    R.string.faltou_entrar_com_a_data_de_entrega,
+                    Toast.LENGTH_LONG).show();
+            editTextDataEntrega.requestFocus();
+            return;
+        }
+
+
         String etapa = etapaView.getText().toString();
 
         if (etapa == null || etapa.trim().isEmpty()) {
@@ -155,16 +222,23 @@ public class CasoActivity extends AppCompatActivity {
             return;
         }
 
+        Intent intentResposta = new Intent();
+        intentResposta.putExtra(ChavesCasoPaciente.NUMERO_EXAME, numeroExame);
+        intentResposta.putExtra(ChavesCasoPaciente.NOME_PACIENTE, nomePaciente);
+        intentResposta.putExtra(ChavesCasoPaciente.DATA_NASCIMENTO, dataNascimento);
+        intentResposta.putExtra(ChavesCasoPaciente.SEXO, Sexo.fromRadioId(checkedRadioButtonId).name());
+        intentResposta.putExtra(ChavesCasoPaciente.NUMERO_SUS, numeroSus);
+        intentResposta.putExtra(ChavesCasoPaciente.DATA_SOLICITACAO, dataSolicitacao);
+        intentResposta.putExtra(ChavesCasoPaciente.ETAPA, etapa);
+        intentResposta.putExtra(ChavesCasoPaciente.DATA_ENTREGA, dataEntrega);
+        setResult(RESULT_OK, intentResposta);
+
         Toast.makeText(this,
-                "Número do exame: " + numeroExame + "\n" +
-                        "Nome do paciente: " + nomePaciente + "\n" +
-                        "Data de nascimento: " + dataNascimento + "\n" +
-                        "Sexo: " + checkedRadioButtonId + "\n" +
-                        "Número do SUS: " + numeroSus + "\n" +
-                        "Data da requisição: " + dataSolicitacao + "\n" +
-                        "Etapa atual: " + etapa,
+                "Dados salvos com sucesso!",
                 Toast.LENGTH_LONG
         ).show();
+
+        finish();
     }
 
     public void limparCampos(View view) {
@@ -180,4 +254,6 @@ public class CasoActivity extends AppCompatActivity {
                 R.string.as_entradas_foram_apagadas,
                 Toast.LENGTH_LONG).show();
     }
+
+
 }

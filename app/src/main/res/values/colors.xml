@@ -3,10 +3,16 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     <color name="duck_green">#006400</color>
-    <color name="duck_green_dark">#004d00</color>   <!-- Verde escuro para textos -->
-    <color name="duck_yellow">#FFD700</color>       <!-- Amarelo vibrante para fundo pill -->
-    <color name="duck_yellow_light">#FFF9C4</color> <!-- Amarelo claro para destaques suaves -->
-    <color name="gray_light">#F5F5F5</color>        <!-- Fundo claro alternativo -->
-    <color name="gray_dark">#212121</color>         <!-- Texto secundário / contraste -->
+    <color name="duck_green_dark">#004d00</color>
+    <color name="duck_yellow">#FFD700</color>
+    <color name="duck_yellow_light">#FFF9C4</color>
+    <color name="gray_light">#F5F5F5</color>
+    <color name="gray_dark">#212121</color>
     <color name="neutral_gray">#9E9E9E</color>
+    <color name="etapa_pendente">#FFA000</color>
+    <color name="etapa_processamento">#0288D1</color>
+    <color name="etapa_concluido">#388E3C</color>
+    <color name="etapa_default">#757575</color>
+    <color name="macro">#6A1B9A</color>
+    <color name="etapa_laudo">#C2185B</color>
 </resources>

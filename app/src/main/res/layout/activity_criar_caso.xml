@@ -4,13 +4,13 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".CasoActivity">
+    tools:context=".views.CriarCasoActivity">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/main"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        tools:context=".CasoActivity">
+        tools:context=".views.CriarCasoActivity">
 
         <androidx.appcompat.widget.Toolbar
             android:id="@+id/toolbar"
@@ -89,13 +89,13 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
             android:layout_marginTop="8dp"
-            android:labelFor="@id/editTextData"
+            android:labelFor="@id/editTextDataNascimento"
             android:text="@string/dataNascimento"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/editTextNomePaciente" />
 
         <EditText
-            android:id="@+id/editTextData"
+            android:id="@+id/editTextDataNascimento"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
@@ -121,7 +121,7 @@
             android:labelFor="@id/radioGroupSexo"
             android:text="@string/sexo"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/editTextData" />
+            app:layout_constraintTop_toBottomOf="@+id/editTextDataNascimento" />
 
         <RadioGroup
             android:id="@+id/radioGroupSexo"
@@ -175,30 +175,53 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
             android:layout_marginTop="8dp"
-            android:labelFor="@id/editTextDate"
+            android:labelFor="@id/editTextDataSolicitacao"
             android:text="@string/dataRequisicao"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/editTextSus" />
 
 
         <EditText
-            android:id="@+id/editTextDate"
-            android:layout_width="0dp"
+            android:id="@+id/editTextDataSolicitacao"
+            android:layout_width="395dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:layout_marginTop="8dp"
-            android:layout_marginEnd="8dp"
-            android:layout_marginBottom="8dp"
             android:clickable="true"
             android:drawableEnd="@drawable/baseline_edit_calendar_24"
             android:drawablePadding="8dp"
             android:focusable="false"
             android:hint="@string/selecione_data_solicitacao"
             android:inputType="none"
-            app:layout_constraintBottom_toTopOf="@+id/tilEtapaAtual"
+            app:layout_constraintTop_toBottomOf="@+id/textViewRequisicao"
+            tools:layout_editor_absoluteX="8dp" />
+
+        <TextView
+            android:id="@+id/dataEntrega"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:labelFor="@id/editTextDataNascimento"
+            android:text="@string/dataEntrega"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/editTextDataSolicitacao" />
+
+        <EditText
+            android:id="@+id/editTextDataEntrega"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="8dp"
+            android:clickable="true"
+            android:drawableEnd="@drawable/baseline_edit_calendar_24"
+            android:drawablePadding="8dp"
+            android:focusable="false"
+            android:hint="@string/selecione_data_entrega"
+            android:inputType="none"
+            android:padding="12dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/textViewRequisicao" />
+            app:layout_constraintTop_toBottomOf="@id/dataEntrega" />
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilEtapaAtual"
@@ -210,7 +233,7 @@
             android:hint="@string/etapaAtual"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/editTextDate">
+            app:layout_constraintTop_toBottomOf="@id/editTextDataEntrega">
 
             <com.google.android.material.textfield.MaterialAutoCompleteTextView
                 android:id="@+id/etEtapaAtual"
@@ -220,7 +243,6 @@
         </com.google.android.material.textfield.TextInputLayout>
 
 
-        <!-- Salvar: preenchido (verde) -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/buttonSalvar"
             style="@style/Widget.Material3.Button"
@@ -240,7 +262,6 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/tilEtapaAtual" />
 
-        <!-- Limpar: contornado (outline) -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/buttonCancelar"
             style="@style/Widget.Material3.Button.OutlinedButton"
