@@ -1,9 +1,33 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Base.Theme.Android" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+
+    <style name="Theme.Android" parent="Theme.Material3.Light">
+        <item name="colorPrimary">@color/duck_green</item>
+        <item name="colorOnPrimary">@android:color/white</item>
+
+        <!-- Status bar -->
+        <item name="android:statusBarColor">@color/duck_green</item>
+        <item name="android:windowLightStatusBar">true</item>
+
+        <!-- ActionBar (se estiver usando) -->
+        <item name="actionBarStyle">@style/Widget.PathoTrack.ActionBar</item>
+        <item name="actionBarTheme">@style/ThemeOverlay.PathoTrack.ActionBar</item>
     </style>
 
-    <style name="Theme.Android" parent="Base.Theme.Android" />
+    <!-- Estilo para a ActionBar -->
+    <style name="Widget.PathoTrack.ActionBar" parent="@style/Widget.AppCompat.ActionBar">
+        <item name="background">@color/duck_green</item>
+        <item name="titleTextStyle">@style/TextAppearance.PathoTrack.ActionBar.Title</item>
+    </style>
+
+    <!-- Overlay para menus e ícones dentro da ActionBar -->
+    <style name="ThemeOverlay.PathoTrack.ActionBar" parent="ThemeOverlay.AppCompat.ActionBar">
+        <item name="android:textColorPrimary">@android:color/white</item>
+        <item name="android:itemTextAppearance">@style/TextAppearance.PathoTrack.ActionBar.Title
+        </item>
+    </style>
+
+    <!-- Texto do título -->
+    <style name="TextAppearance.PathoTrack.ActionBar.Title" parent="TextAppearance.AppCompat.Widget.ActionBar.Title">
+        <item name="android:textColor">@android:color/white</item>
+    </style>
 </resources>

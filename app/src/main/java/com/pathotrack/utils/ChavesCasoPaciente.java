@@ -9,4 +9,6 @@ public class ChavesCasoPaciente {
     public static final String DATA_SOLICITACAO = "DATA_SOLICITACAO";
     public static final String ETAPA = "ETAPA";
     public static final String DATA_ENTREGA = "DATA_ENTREGA";
+    public static final String CASO_ID = "CASO_ID";
+    public static final String PACIENTE_ID = "PACIENTE_ID";
 }

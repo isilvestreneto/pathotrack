@@ -13,17 +13,19 @@
         android:theme="@style/Theme.Android">
         <activity
             android:name=".views.ListarCasosActivity"
-            android:exported="true">
+            android:exported="true"
+            android:launchMode="singleTop">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".views.AutoriaActivity">
-        </activity>
-        <activity android:name=".views.CriarCasoActivity">
-        </activity>
+        <activity
+            android:name=".views.AutoriaActivity"
+            android:parentActivityName=".views.ListarCasosActivity"></activity>
+        <activity
+            android:name=".views.CriarCasoActivity"
+            android:parentActivityName=".views.ListarCasosActivity"></activity>
     </application>
 
 </manifest>

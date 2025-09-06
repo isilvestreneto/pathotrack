@@ -41,5 +41,9 @@
     <string name="email_res">E-mail</string>
     <string name="adicionar">Adicionar</string>
     <string name="sobre">Sobre</string>
+    <string name="semCasos">Não há casos para exibir no momento. \nCadastre um novo para continuar!</string>
+    <string name="valorFiltro">valorFiltro</string>
+    <string name="editar">Editar</string>
+    <string name="excluir">Excluir</string>
 
 </resources>

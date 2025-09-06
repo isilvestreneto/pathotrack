@@ -2,86 +2,36 @@
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
-
-    <androidx.appcompat.widget.Toolbar
-        android:id="@+id/toolbar"
-        android:layout_width="0dp"
-        android:layout_height="?attr/actionBarSize"
-        android:background="@color/duck_green"
-        android:paddingTop="0dp"
-        android:paddingBottom="0dp"
-        app:contentInsetStartWithNavigation="0dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:title="@string/app_name"
-        app:titleTextColor="@android:color/white" />
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
+    android:paddingTop="?attr/actionBarSize">
 
     <com.google.android.material.button.MaterialButton
-        android:id="@+id/textView3"
+        android:id="@+id/buttonListagemCasos"
         style="@style/Widget.MaterialComponents.Button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_margin="16dp"
-        android:layout_marginStart="250dp"
-        android:layout_marginTop="16dp"
+        android:layout_marginStart="16dp"
         android:text="@string/listagem_de_casos"
         android:textColor="@color/white"
-        android:visibility="gone"
         app:backgroundTint="@color/duck_green"
         app:cornerRadius="24dp"
         app:iconPadding="8dp"
         app:iconTint="@color/white"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/toolbar" />
+        app:layout_constraintTop_toTopOf="parent" />
 
-    <!-- Container da faixa de filtros -->
-    <LinearLayout
-        android:id="@+id/buttonsContainer"
-        android:layout_width="0dp"
+    <TextView
+        android:id="@+id/semCasos"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:paddingHorizontal="24dp"
-        android:paddingTop="0dp"
-        android:paddingBottom="0dp"
-        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:text="@string/semCasos"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/toolbar">
+        app:layout_constraintTop_toBottomOf="@+id/buttonListagemCasos" />
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/buttonAdicionar"
-            style="@style/Widget.Material3.Button"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:layout_marginBottom="8dp"
-            android:onClick="abrirAdicionar"
-            android:text="@string/adicionar"
-            android:textColor="@android:color/white"
-            app:backgroundTint="@color/duck_green"
-            app:cornerRadius="12dp"
-            app:icon="@drawable/ic_add_24"
-            app:iconGravity="textStart"
-            app:iconPadding="8dp"
-            app:iconTint="@android:color/white" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/buttonSobre"
-            style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:layout_marginBottom="32dp"
-            android:onClick="abrirSobre"
-            android:text="@string/sobre"
-            app:cornerRadius="12dp"
-            app:icon="@drawable/ic_info_24"
-            app:iconGravity="textStart"
-            app:iconPadding="8dp" />
-    </LinearLayout>
-
-    <!-- TODO Integrar esse grupo de filtros futuramente -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/filtersRow"
         android:layout_width="0dp"
@@ -93,7 +43,7 @@
         android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/toolbar">
+        app:layout_constraintTop_toBottomOf="@+id/buttonListagemCasos">
 
         <!-- Labels -->
         <TextView
@@ -143,9 +93,34 @@
             app:layout_constraintStart_toEndOf="@id/exibicao"
             app:layout_constraintTop_toBottomOf="@id/textView2" />
 
-    </androidx.constraintlayout.widget.ConstraintLayout>
+        <androidx.constraintlayout.widget.Barrier
+            android:id="@+id/filtersRowBottomBarrier"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:barrierAllowsGoneWidgets="true"
+            app:barrierDirection="bottom"
+            app:constraint_referenced_ids="exibicao,ordenarPor" />
 
-    <!-- Barra de paginação -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/filtroValorLayout"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:hint="@string/valorFiltro"
+            app:endIconMode="clear_text"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/filtersRowBottomBarrier">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/filtroValor"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="text"
+                android:maxLines="1" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvCasos"
@@ -155,7 +130,7 @@
         app:layout_constraintBottom_toTopOf="@id/paginationBar"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/buttonsContainer" />
+        app:layout_constraintTop_toBottomOf="@+id/filtersRow" />
 
     <LinearLayout
         android:id="@+id/paginationBar"

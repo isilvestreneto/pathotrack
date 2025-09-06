@@ -31,6 +31,16 @@ public class CasoAdapter extends RecyclerView.Adapter<CasoAdapter.CasoViewHolder
     private final List<CasoPacienteDTO> items = new ArrayList<>();
     private OnItemClickListener clickListener;
 
+    public interface OnItemLongClickListener {
+        void onItemLongClick(int position);
+    }
+
+    private OnItemLongClickListener longClickListener;
+
+    public void setOnItemLongClickListener(OnItemLongClickListener l) {
+        this.longClickListener = l;
+    }
+
     public void setItems(List<CasoPacienteDTO> novos) {
         items.clear();
         if (novos != null) items.addAll(novos);
@@ -60,7 +70,8 @@ public class CasoAdapter extends RecyclerView.Adapter<CasoAdapter.CasoViewHolder
             } else if (et != null) {
                 etapaEnum = Etapa.fromLabel(et.toString());
             }
-        } catch (Exception ignore) { }
+        } catch (Exception ignore) {
+        }
 
         h.tvPaciente.setText(c.getPacienteId().toString());
 
@@ -97,6 +108,17 @@ public class CasoAdapter extends RecyclerView.Adapter<CasoAdapter.CasoViewHolder
             int pos = h.getAdapterPosition();
             if (pos == RecyclerView.NO_POSITION) return;
             clickListener.onItemClick(items.get(pos));
+        });
+
+        h.itemView.setOnLongClickListener(v -> {
+            if (longClickListener != null) {
+                int pos = h.getAdapterPosition();
+                if (pos != RecyclerView.NO_POSITION) {
+                    longClickListener.onItemLongClick(pos);
+                }
+            }
+            v.showContextMenu();
+            return true;
         });
     }
 
