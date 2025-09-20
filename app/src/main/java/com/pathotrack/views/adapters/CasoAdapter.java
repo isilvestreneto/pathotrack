@@ -72,8 +72,8 @@ public class CasoAdapter extends RecyclerView.Adapter<CasoAdapter.CasoViewHolder
                 etapaEnum = Etapa.parse(s);
             }
         }
-
-        h.tvPaciente.setText(c.getPacienteId().toString());
+        Long pid = c.getPacienteId();
+        h.tvPaciente.setText((pid == null || pid <= 0) ? "-" : String.valueOf(pid));
 
         h.valIdade.setText(String.valueOf(c.getIdade()));
 
@@ -210,5 +210,10 @@ public class CasoAdapter extends RecyclerView.Adapter<CasoAdapter.CasoViewHolder
                 throw new IllegalStateException("IDs do layout do item não encontrados. Revise item_caso.xml");
             }
         }
+    }
+
+    public CasoPacienteDTO getItemAt(int position) {
+        if (position < 0 || position >= items.size()) return null;
+        return items.get(position);
     }
 }

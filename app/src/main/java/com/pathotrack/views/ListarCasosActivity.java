@@ -16,7 +16,6 @@ import android.widget.TextView;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -28,7 +27,7 @@ import com.pathotrack.R;
 import com.pathotrack.domain.entities.CasoPacienteDTO;
 import com.pathotrack.domain.enums.Etapa;
 import com.pathotrack.domain.enums.Sexo;
-import com.pathotrack.services.CasoService;
+import com.pathotrack.persistency.CasoPacienteDB;
 import com.pathotrack.utils.ChavesAplicacao;
 import com.pathotrack.utils.ChavesCasoPaciente;
 import com.pathotrack.utils.UtilsAlert;
@@ -40,12 +39,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-// TODO Exiba um AlertDialog para confirmar a ação do usuário antes de excluir dados persistidos;
-
-
 public class ListarCasosActivity extends AppCompatActivity {
-    private final CasoService casoService;
-
     private RecyclerView rvCasos;
     private CasoAdapter adapter;
     private MaterialButton btnPrev, btnNext;
@@ -54,10 +48,8 @@ public class ListarCasosActivity extends AppCompatActivity {
     private TextInputEditText filtroValor;
     private MaterialAutoCompleteTextView exibicao, ordenarPor;
     private CheckBox checkbox;
+    private CasoPacienteDB db;
 
-    private static final int PAGE_SIZE = 5;
-    private int currentPage = 0;
-    private int totalPages = 1;
     private List<CasoPacienteDTO> allCasos = new ArrayList<>();
     private List<CasoPacienteDTO> filteredCasos = new ArrayList<>();
     private int selectedAdapterPosition = RecyclerView.NO_POSITION;
@@ -73,14 +65,20 @@ public class ListarCasosActivity extends AppCompatActivity {
     private boolean sugerirConfiguracao = false;
     private boolean isRestoring = false;
 
-    public ListarCasosActivity() {
-        this.casoService = new CasoService();
-    }
+    private static final int PAGE_SIZE = 5;
+    private int currentPage = 0;
+    private int totalPages = 1;
+
+    private boolean filtrarPorEtapa = false;
+    private String etapaPrefix = "";
+    private boolean ordenarAsc = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_listar_casos);
+
+        db = CasoPacienteDB.getInstance(getApplicationContext());
 
         rvCasos = findViewById(R.id.rvCasos);
         btnPrev = findViewById(R.id.btnPrev);
@@ -94,15 +92,9 @@ public class ListarCasosActivity extends AppCompatActivity {
         ordenarPor = findViewById(R.id.ordenarPor);
         checkbox = findViewById(R.id.checkbox);
 
-        String[] exibicaoOpts = new String[]{
-                getString(R.string.nenhum),
-                getString(R.string.etapa)
-        };
+        String[] exibicaoOpts = new String[]{getString(R.string.nenhum), getString(R.string.etapa)};
 
-        String[] ordenarOpts = new String[]{
-                getString(R.string.ordenar_antigo_novo),
-                getString(R.string.ordenar_novo_antigo)
-        };
+        String[] ordenarOpts = new String[]{getString(R.string.ordenar_antigo_novo), getString(R.string.ordenar_novo_antigo)};
 
 
         exibicao.setSimpleItems(exibicaoOpts);
@@ -115,15 +107,12 @@ public class ListarCasosActivity extends AppCompatActivity {
         rvCasos.setLayoutManager(new LinearLayoutManager(this));
         rvCasos.setAdapter(adapter);
 
-        List<CasoPacienteDTO> result = CasoService.buscarCasos();
+        List<CasoPacienteDTO> result = db.getCasoPacienteDAO().findAll();
 
-        /**
-         * TODO: futuramente, quando salvar a entidade em algum lugar, descomentar essa linha
-         * TODO: e inserir a busca de onde tiver com os dados persistidos
-         */
-        allCasos = (result != null) ? result : java.util.Collections.emptyList();
+        allCasos = new ArrayList<>(result != null ? result : new ArrayList<>());
         filteredCasos = new ArrayList<>(allCasos);
 
+        renderCurrentPage();
         totalPages = Math.max(1, (int) Math.ceil(allCasos.size() / (double) PAGE_SIZE));
 
         isRestoring = true;
@@ -133,7 +122,10 @@ public class ListarCasosActivity extends AppCompatActivity {
         if (sugerirConfiguracao) {
             applyFilterAndSort();
         } else {
-            updatePage();
+            filtrarPorEtapa = false;
+            ordenarAsc = false;
+            currentPage = 0;
+            loadPage();
         }
 
         adapter.setOnItemLongClickListener(pos -> selectedAdapterPosition = pos);
@@ -141,16 +133,17 @@ public class ListarCasosActivity extends AppCompatActivity {
         btnPrev.setOnClickListener(v -> {
             if (currentPage > 0) {
                 currentPage--;
-                updatePageFromFiltered();
+                loadPage();
             }
         });
 
         btnNext.setOnClickListener(v -> {
             if (currentPage < totalPages - 1) {
                 currentPage++;
-                updatePageFromFiltered();
+                loadPage();
             }
         });
+
         exibicao.setOnItemClickListener((p, v, pos, id) -> {
             if (isRestoring) return;
             applyFilterAndSort();
@@ -180,11 +173,9 @@ public class ListarCasosActivity extends AppCompatActivity {
             editor.putBoolean(KEY_KEEP, isChecked);
 
             if (isChecked) {
-                String campoToken = getString(R.string.etapa).equalsIgnoreCase(safe(exibicao.getText()))
-                        ? T_CAMPO_ETAPA : T_CAMPO_NONE;
+                String campoToken = getString(R.string.etapa).equalsIgnoreCase(safe(exibicao.getText())) ? T_CAMPO_ETAPA : T_CAMPO_NONE;
 
-                String sortToken = getString(R.string.ordenar_novo_antigo).equalsIgnoreCase(safe(ordenarPor.getText()))
-                        ? T_SORT_DESC : T_SORT_ASC;
+                String sortToken = getString(R.string.ordenar_novo_antigo).equalsIgnoreCase(safe(ordenarPor.getText())) ? T_SORT_DESC : T_SORT_ASC;
 
                 editor.putString(KEY_CAMPO, campoToken);
                 editor.putString(KEY_FILTER_VALUE, safe(filtroValor.getText()));
@@ -202,27 +193,56 @@ public class ListarCasosActivity extends AppCompatActivity {
 
     private void applyFilterAndSort() {
         String campo = safe(exibicao.getText());
-        String valor = safe(filtroValor.getText());
+        String valorUI = safe(filtroValor.getText()).trim();
         String ordem = safe(ordenarPor.getText());
 
-        // 1) FILTRO
-        List<CasoPacienteDTO> base = new ArrayList<>(allCasos);
+        filtrarPorEtapa = getString(R.string.etapa).equalsIgnoreCase(campo) && !valorUI.isEmpty();
+        etapaPrefix = filtrarPorEtapa ? etapaToken(valorUI) : "";
+        ordenarAsc = getString(R.string.ordenar_antigo_novo).equalsIgnoreCase(ordem);
 
-        List<CasoPacienteDTO> filtrados = new ArrayList<>();
-        for (CasoPacienteDTO c : base) {
-            if (matchesFiltro(c, campo, valor)) {
-                filtrados.add(c);
+        currentPage = 0;
+        loadPage();
+    }
+
+    private void loadPage() {
+        int limit = PAGE_SIZE;
+        int offset = currentPage * PAGE_SIZE;
+
+        List<CasoPacienteDTO> pageItems;
+        int totalRows;
+
+        if (filtrarPorEtapa) {
+            totalRows = db.getCasoPacienteDAO().countByEtapa(etapaPrefix);
+            if (ordenarAsc) {
+                pageItems = db.getCasoPacienteDAO().findByEtapaPagedOrderByDataEntregaAsc(etapaPrefix, limit, offset);
+            } else {
+                pageItems = db.getCasoPacienteDAO().findByEtapaPagedOrderByDataEntregaDesc(etapaPrefix, limit, offset);
+            }
+        } else {
+            totalRows = db.getCasoPacienteDAO().countAll();
+            if (ordenarAsc) {
+                pageItems = db.getCasoPacienteDAO().findAllPagedOrderByDataEntregaAsc(limit, offset);
+            } else {
+                pageItems = db.getCasoPacienteDAO().findAllPagedOrderByDataEntregaDesc(limit, offset);
             }
         }
 
-        // 2) ORDENAR
-        filtrados.sort(getComparator(ordem));
+        if (pageItems == null) pageItems = new ArrayList<>();
+        adapter.setItems(pageItems);
+        updateNavUi(pageItems.size(), totalRows);
+    }
 
-        // 3) ATUALIZAR ESTADO/PAGINAÇÃO
-        filteredCasos = filtrados;
-        currentPage = 0;
-        totalPages = Math.max(1, (int) Math.ceil(filteredCasos.size() / (double) PAGE_SIZE));
-        updatePageFromFiltered();
+
+    private String etapaToken(String uiText) {
+        String up = uiText == null ? "" : uiText.trim().toUpperCase(java.util.Locale.ROOT);
+        for (Etapa e : Etapa.values()) {
+            String name = e.name();
+            String label = getString(e.getLabelResId()).toUpperCase(java.util.Locale.ROOT);
+            if (name.startsWith(up) || label.startsWith(up)) {
+                return name.substring(0, Math.min(name.length(), up.length()));
+            }
+        }
+        return up;
     }
 
     private void updatePageFromFiltered() {
@@ -242,6 +262,7 @@ public class ListarCasosActivity extends AppCompatActivity {
         semCasos.setVisibility(vazio ? View.VISIBLE : View.GONE);
         filtersRow.setVisibility(vazio ? View.GONE : View.VISIBLE);
         paginationBar.setVisibility(vazio ? View.GONE : View.VISIBLE);
+        checkbox.setVisibility(vazio ? View.GONE : View.VISIBLE);
 
         tvPage.setText((currentPage + 1) + " / " + totalPages);
         btnPrev.setEnabled(currentPage > 0);
@@ -272,38 +293,6 @@ public class ListarCasosActivity extends AppCompatActivity {
         return null;
     }
 
-    private boolean matchesFiltro(CasoPacienteDTO c, String campo, String valor) {
-        if (valor.isEmpty() || getString(R.string.nenhum).equalsIgnoreCase(campo)) return true;
-
-        if (getString(R.string.etapa).equalsIgnoreCase(campo)) {
-            String alvo = etapaDisplay(c);
-            String q = normalize(valor);
-            return normalize(alvo).startsWith(q);
-        }
-
-        return true;
-    }
-
-    private static String normalize(String s) {
-        if (s == null) return "";
-        String n = java.text.Normalizer.normalize(s, java.text.Normalizer.Form.NFD)
-                .replaceAll("\\p{M}", "");
-        return n.trim().toLowerCase(java.util.Locale.ROOT);
-    }
-
-    private String etapaDisplay(CasoPacienteDTO c) {
-        Object et = c.getEtapa();
-        if (et instanceof Etapa) {
-            return getString(((Etapa) et).getLabelResId());
-        }
-        if (et instanceof String) {
-            Etapa e = Etapa.parse((String) et);
-            if (e != null) return getString(e.getLabelResId());
-            return (String) et;
-        }
-        return "";
-    }
-
     public abstract class SimpleTextWatcher implements android.text.TextWatcher {
         @Override
         public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -329,10 +318,12 @@ public class ListarCasosActivity extends AppCompatActivity {
         if (allCasos.isEmpty()) {
             filtersRow.setVisibility(View.GONE);
             paginationBar.setVisibility(View.GONE);
+            checkbox.setVisibility(View.GONE);
         } else {
             semCasos.setVisibility(View.GONE);
             filtersRow.setVisibility(View.VISIBLE);
             paginationBar.setVisibility(View.VISIBLE);
+            checkbox.setVisibility(View.VISIBLE);
             tvPage.setText((currentPage + 1) + " / " + totalPages);
             btnPrev.setEnabled(currentPage > 0);
             btnNext.setEnabled(currentPage < totalPages - 1);
@@ -374,84 +365,18 @@ public class ListarCasosActivity extends AppCompatActivity {
     }
 
     ActivityResultLauncher<Intent> launcherNovoCaso = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
-        if (result.getResultCode() == CriarCasoActivity.RESULT_OK) {
-            Intent intent = result.getData();
-            CasoPacienteDTO novo = montarCasoAPartirDosExtras(intent);
-            allCasos.add(0, novo);
-            totalPages = Math.max(1, (int) Math.ceil(allCasos.size() / (double) PAGE_SIZE));
+        if (result.getResultCode() == RESULT_OK) {
             currentPage = 0;
-            updatePage();
+            loadPage();
         }
     });
 
-    ActivityResultLauncher<Intent> launcherEditarCaso = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
-        if (result.getResultCode() == CriarCasoActivity.RESULT_OK) {
-            Intent intent = result.getData();
-            CasoPacienteDTO atualizado = montarCasoAPartirDosExtras(intent);
-            if (atualizado == null) return;
-            substituirCasoPorId(atualizado.getCasoId(), atualizado);
-        }
-    });
-
-    private void substituirCasoPorId(Long casoId, CasoPacienteDTO atualizado) {
-        for (int i = 0; i < allCasos.size(); i++) {
-            Long id = allCasos.get(i).getCasoId();
-            if (id != null && id.longValue() == casoId) {
-                allCasos.set(i, atualizado);
-                break;
-            }
-        }
-
-        for (int i = 0; i < filteredCasos.size(); i++) {
-            Long id = filteredCasos.get(i).getCasoId();
-            if (id != null && id.longValue() == casoId) {
-                filteredCasos.set(i, atualizado);
-                break;
-            }
-        }
-
-        renderCurrentPage();
-    }
-
-    private @Nullable CasoPacienteDTO montarCasoAPartirDosExtras(@NonNull Intent data) {
-        String numeroExame = data.getStringExtra(ChavesCasoPaciente.NUMERO_EXAME);
-        String nomePaciente = data.getStringExtra(ChavesCasoPaciente.NOME_PACIENTE);
-        String dataNascimento = data.getStringExtra(ChavesCasoPaciente.DATA_NASCIMENTO);
-        String sexoName = data.getStringExtra(ChavesCasoPaciente.SEXO);
-        String numeroSus = data.getStringExtra(ChavesCasoPaciente.NUMERO_SUS);
-        String dataSolicitacao = data.getStringExtra(ChavesCasoPaciente.DATA_SOLICITACAO);
-        String etapaLabel = data.getStringExtra(ChavesCasoPaciente.ETAPA);
-        String dataEntrega = data.getStringExtra(ChavesCasoPaciente.DATA_ENTREGA);
-        int modo = data.getIntExtra(CriarCasoActivity.KEY_MODO, CriarCasoActivity.MODO_NOVO);
-
-
-        if (numeroExame == null || nomePaciente == null || dataNascimento == null ||
-                sexoName == null || numeroSus == null || dataSolicitacao == null ||
-                etapaLabel == null || dataEntrega == null) {
-            return null;
-        }
-
-        Sexo sexo = Sexo.valueOf(sexoName);
-        Etapa etapa = Etapa.parse(etapaLabel);
-        if (etapa == null) {
-            etapa = Etapa.parse(etapaLabel);
-            if (etapa == null) {
-                throw new IllegalArgumentException("Etapa inválida: " + etapaLabel);
-            }
-        }
-
-        long idCaso = data.getLongExtra(ChavesCasoPaciente.CASO_ID, -1L);
-        long idPaciente = data.getLongExtra(ChavesCasoPaciente.PACIENTE_ID, -1L);
-
-
-        if (modo == CriarCasoActivity.MODO_NOVO || idCaso == -1L) {
-            idCaso = System.currentTimeMillis();
-            idPaciente = idCaso + 7;
-        }
-
-        return new CasoPacienteDTO(idCaso, numeroExame, dataSolicitacao, dataEntrega, etapa,
-                idPaciente, nomePaciente, dataNascimento, sexo, numeroSus, numeroSus);
-    }
+    ActivityResultLauncher<Intent> launcherEditarCaso =
+            registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
+                if (result.getResultCode() == RESULT_OK) {
+                    loadPage();
+                }
+            });
 
     @Override
     public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
@@ -500,56 +425,58 @@ public class ListarCasosActivity extends AppCompatActivity {
         launcherEditarCaso.launch(intent);
     }
 
-    private void excluirDaListaFiltrada(int absoluteIndex) {
-        if (absoluteIndex < 0 || absoluteIndex >= filteredCasos.size()) return;
+    private void excluirDaListaFiltrada(int indexNaPagina) {
+        CasoPacienteDTO alvo = adapter.getItemAt(indexNaPagina);
+        if (alvo == null) return;
 
-        CasoPacienteDTO alvo = filteredCasos.get(absoluteIndex);
-
-        String mensagem = getString(R.string.deseja_apagar) + alvo.getProntuario() + "?";
-
-        DialogInterface.OnClickListener listenerSim = new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                filteredCasos.remove(absoluteIndex);
-
-                allCasos.remove(alvo);
-
-                totalPages = Math.max(1, (int) Math.ceil(filteredCasos.size() / (double) PAGE_SIZE));
-                if (currentPage >= totalPages) currentPage = totalPages - 1;
-                renderCurrentPage();
+        String mensagem = getString(R.string.deseja_apagar) + " " + alvo.getProntuario() + "?";
+        DialogInterface.OnClickListener ok = (d, w) -> {
+            int rows = db.getCasoPacienteDAO().deleteById(alvo.getCasoId());
+            if (rows > 0) {
+                int totalRows = filtrarPorEtapa
+                        ? db.getCasoPacienteDAO().countByEtapa(etapaPrefix)
+                        : db.getCasoPacienteDAO().countAll();
+                int newTotalPages = Math.max(1, (int) Math.ceil(totalRows / (double) PAGE_SIZE));
+                if (currentPage >= newTotalPages) currentPage = Math.max(0, newTotalPages - 1);
+                loadPage();
+            } else {
+                UtilsAlert.mostrarAviso(this, R.string.houve_um_problema_ao_excluir);
             }
         };
-
-        UtilsAlert.confirmarAcao(this, mensagem, listenerSim, null);
-
+        UtilsAlert.confirmarAcao(this, mensagem, ok, null);
     }
 
+
     private void lerPreferencias() {
-        SharedPreferences shared = getSharedPreferences(ChavesAplicacao.PREFERENCIAS, Context.MODE_PRIVATE);
-        sugerirConfiguracao = shared.getBoolean(KEY_KEEP, false);
-        checkbox.setChecked(sugerirConfiguracao);
+        boolean prev = isRestoring;
+        isRestoring = true;
 
-        if (sugerirConfiguracao) {
-            String campo = shared.getString(KEY_CAMPO, T_CAMPO_NONE);
-            String valor = shared.getString(KEY_FILTER_VALUE, "");
-            String sort = shared.getString(KEY_SORT, T_SORT_ASC);
+        try {
+            SharedPreferences shared = getSharedPreferences(ChavesAplicacao.PREFERENCIAS, Context.MODE_PRIVATE);
+            sugerirConfiguracao = shared.getBoolean(KEY_KEEP, false);
+            checkbox.setChecked(sugerirConfiguracao);
 
-            exibicao.setText(
-                    T_CAMPO_ETAPA.equals(campo) ? getString(R.string.etapa) : getString(R.string.nenhum),
-                    false
-            );
+            if (sugerirConfiguracao) {
+                String campo = shared.getString(KEY_CAMPO, T_CAMPO_NONE);
+                String valor = shared.getString(KEY_FILTER_VALUE, "");
+                String sort = shared.getString(KEY_SORT, T_SORT_ASC);
 
-            filtroValor.setText(valor);
+                exibicao.setText(T_CAMPO_ETAPA.equals(campo) ? getString(R.string.etapa) : getString(R.string.nenhum), false);
 
-            if (T_SORT_ASC.equals(sort)) {
-                ordenarPor.setText(getString(R.string.ordenar_antigo_novo), false);
+                filtroValor.setText(valor);
+
+                if (T_SORT_ASC.equals(sort)) {
+                    ordenarPor.setText(getString(R.string.ordenar_antigo_novo), false);
+                } else {
+                    ordenarPor.setText(getString(R.string.ordenar_novo_antigo), false);
+                }
             } else {
+                exibicao.setText(getString(R.string.nenhum), false);
+                filtroValor.setText("");
                 ordenarPor.setText(getString(R.string.ordenar_novo_antigo), false);
             }
-        } else {
-            exibicao.setText(getString(R.string.nenhum), false);
-            filtroValor.setText("");
-            ordenarPor.setText(getString(R.string.ordenar_novo_antigo), false);
+        } finally {
+            isRestoring = prev;
         }
     }
 
@@ -573,4 +500,46 @@ public class ListarCasosActivity extends AppCompatActivity {
         editor.putString(KEY_SORT, sortToken);
         editor.apply();
     }
+
+    private int calcTotalPages(int totalRows) {
+        return Math.max(1, (int) Math.ceil(totalRows / (double) PAGE_SIZE));
+    }
+
+    private void updateNavUi(int pageItemCount, int totalRows) {
+        int totalAllRows = db.getCasoPacienteDAO().countAll();
+
+        totalPages = Math.max(1, (int) Math.ceil(totalRows / (double) PAGE_SIZE));
+        currentPage = Math.min(currentPage, totalPages - 1);
+
+        boolean semMatches = (totalRows == 0);
+        boolean haDadosNoDB = (totalAllRows > 0);
+
+        if (semMatches && haDadosNoDB) {
+            semCasos.setText(getString(R.string.sem_resultados_para_este_filtro));
+            semCasos.setVisibility(View.VISIBLE);
+        } else if (!haDadosNoDB) {
+            semCasos.setText(getString(R.string.sem_casos));
+            semCasos.setVisibility(View.VISIBLE);
+        } else {
+            semCasos.setVisibility(View.GONE);
+        }
+
+        filtersRow.setVisibility(View.VISIBLE);
+
+        checkbox.setVisibility(View.VISIBLE);
+
+        if (semMatches) {
+            paginationBar.setVisibility(View.GONE);
+            tvPage.setText("0 / 1");
+            btnPrev.setEnabled(false);
+            btnNext.setEnabled(false);
+        } else {
+            paginationBar.setVisibility(View.VISIBLE);
+            tvPage.setText((currentPage + 1) + " / " + totalPages);
+            btnPrev.setEnabled(currentPage > 0);
+            btnNext.setEnabled(currentPage < totalPages - 1);
+        }
+    }
+
+
 }

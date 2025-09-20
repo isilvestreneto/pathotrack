@@ -18,9 +18,10 @@ import com.google.android.material.button.MaterialButton;
 import com.google.android.material.datepicker.MaterialDatePicker;
 import com.google.android.material.textfield.MaterialAutoCompleteTextView;
 import com.pathotrack.R;
+import com.pathotrack.domain.entities.CasoPacienteDTO;
 import com.pathotrack.domain.enums.Etapa;
 import com.pathotrack.domain.enums.Sexo;
-import com.pathotrack.utils.ChavesCasoPaciente;
+import com.pathotrack.persistency.CasoPacienteDB;
 import com.pathotrack.utils.UtilsAlert;
 
 import java.time.LocalDate;
@@ -37,17 +38,22 @@ public class CriarCasoActivity extends AppCompatActivity {
     MaterialButton titulo;
     RadioGroup radioGroupSexo;
     MaterialAutoCompleteTextView etapaView;
+    CasoPacienteDB db;
+    CasoPacienteDTO casoOrginal;
     public static final String KEY_MODO = "MODO";
     public static final int MODO_NOVO = 0;
     public static final int MODO_EDITAR = 1;
     private int modo;
     private long casoId = -1L;
     private long pacienteId = -1L;
+    private Long pacienteIdParaSalvar = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_criar_caso);
+
+        db = CasoPacienteDB.getInstance(getApplicationContext());
 
         titulo = findViewById(R.id.titulo);
         editTextNumeroExame = findViewById(R.id.editTextNumeroExame);
@@ -61,43 +67,54 @@ public class CriarCasoActivity extends AppCompatActivity {
 
         setupEtapaDropdown();
 
-        Intent intent = getIntent();
-        Bundle bundle = intent.getExtras();
-
+        Bundle bundle = getIntent().getExtras();
         if (bundle != null) {
-            modo = bundle.getInt(KEY_MODO);
+            casoId = bundle.getLong("CASO_ID", -1L);
+            pacienteId = bundle.getLong("PACIENTE_ID", -1L);
+            modo = bundle.getInt(KEY_MODO, MODO_NOVO);
+        } else {
+            modo = MODO_NOVO;
+        }
 
-            if (modo == MODO_NOVO) {
-                titulo.setText(R.string.novoCaso);
+        pacienteIdParaSalvar = (pacienteId != -1L) ? pacienteId : null;
+
+        if (modo == MODO_EDITAR && (pacienteIdParaSalvar == null) && casoOrginal != null) {
+            titulo.setText(R.string.editarCaso);
+            pacienteIdParaSalvar = casoOrginal.getPacienteId();
+        }
+
+        if (modo == MODO_NOVO) {
+            titulo.setText(R.string.novoCaso);
+            pacienteIdParaSalvar = (pacienteId != -1L) ? pacienteId : null;
+        } else {
+            titulo.setText(R.string.editarCaso);
+
+            casoOrginal = db.getCasoPacienteDAO().queryForId(casoId);
+
+            if (pacienteId != -1L) {
+                pacienteIdParaSalvar = pacienteId;
             } else {
-                titulo.setText(R.string.editarCaso);
+                pacienteIdParaSalvar = casoOrginal != null ? casoOrginal.getPacienteId() : null;
+            }
 
-                casoId = bundle.getLong("CASO_ID", -1L);
-                pacienteId = bundle.getLong("PACIENTE_ID", -1L);
+            setTextIfPresent(casoOrginal.getNumeroExame(), editTextNumeroExame);
+            setTextIfPresent(casoOrginal.getPacienteNome(), editTextNomePaciente);
+            setTextIfPresent(casoOrginal.getDataNascimento(), editTextDataNascimento);
+            setTextIfPresent(casoOrginal.getSus(), editTextSus);
+            setTextIfPresent(casoOrginal.getDataEntrega(), editTextDataEntrega);
+            setTextIfPresent(casoOrginal.getDataRequisicao(), editTextDataSolicitacao);
 
-                setTextIfPresent(bundle, ChavesCasoPaciente.NUMERO_EXAME, editTextNumeroExame);
-                setTextIfPresent(bundle, ChavesCasoPaciente.NOME_PACIENTE, editTextNomePaciente);
-                setTextIfPresent(bundle, ChavesCasoPaciente.DATA_NASCIMENTO, editTextDataNascimento);
-                setTextIfPresent(bundle, ChavesCasoPaciente.NUMERO_SUS, editTextSus);
-                setTextIfPresent(bundle, ChavesCasoPaciente.DATA_ENTREGA, editTextDataEntrega);
-                setTextIfPresent(bundle, ChavesCasoPaciente.DATA_SOLICITACAO, editTextDataSolicitacao);
+            String sexoStr = casoOrginal.getSexo().name();
+            selectSexo(radioGroupSexo, sexoStr);
 
-                String sexoStr = bundle.getString(ChavesCasoPaciente.SEXO);
-                if (sexoStr != null) {
-                    selectSexo(radioGroupSexo, sexoStr);
-                }
-
-                String etapaRaw = bundle.getString(ChavesCasoPaciente.ETAPA);
-                if (etapaRaw != null) {
-                    Etapa etapa = parseEtapaFlex(etapaRaw);
-                    if (etapa != null) {
-                        etapaView.setText(etapa.label(etapaView), false);
-                        etapaView.setTag(etapa);
-                    } else {
-                        etapaView.setText(etapaRaw);
-                        etapaView.setTag(null);
-                    }
-                }
+            String etapaRaw = casoOrginal.getEtapa().toString();
+            Etapa etapa = parseEtapaFlex(etapaRaw);
+            if (etapa != null) {
+                etapaView.setText(etapa.label(etapaView), false);
+                etapaView.setTag(etapa);
+            } else {
+                etapaView.setText(etapaRaw);
+                etapaView.setTag(null);
             }
         }
 
@@ -196,17 +213,14 @@ public class CriarCasoActivity extends AppCompatActivity {
         });
 
         if (TextUtils.isEmpty(etapaDropdown.getText())) {
-            etapaDropdown.setText(getString(Etapa.RECEBIMENTO.getLabelResId()), /* filter= */ false);
+            etapaDropdown.setText(getString(Etapa.RECEBIMENTO.getLabelResId()), false);
             etapaDropdown.setTag(Etapa.RECEBIMENTO);
         }
     }
 
 
-    private void setTextIfPresent(Bundle b, String key, TextView view) {
-        if (b.containsKey(key)) {
-            String v = b.getString(key);
-            if (v != null) view.setText(v);
-        }
+    private void setTextIfPresent(String key, TextView view) {
+        view.setText(key);
     }
 
     @Nullable
@@ -347,24 +361,34 @@ public class CriarCasoActivity extends AppCompatActivity {
             return;
         }
 
-        Intent intentResposta = new Intent();
-        intentResposta.putExtra(ChavesCasoPaciente.NUMERO_EXAME, numeroExame);
-        intentResposta.putExtra(ChavesCasoPaciente.NOME_PACIENTE, nomePaciente);
-        intentResposta.putExtra(ChavesCasoPaciente.DATA_NASCIMENTO, dataNascimento);
-        intentResposta.putExtra(ChavesCasoPaciente.SEXO, Sexo.fromRadioId(checkedRadioButtonId).name());
-        intentResposta.putExtra(ChavesCasoPaciente.NUMERO_SUS, numeroSus);
-        intentResposta.putExtra(ChavesCasoPaciente.DATA_SOLICITACAO, dataSolicitacao);
-        intentResposta.putExtra(ChavesCasoPaciente.ETAPA, etapaSelecionada.name());
-        intentResposta.putExtra(ChavesCasoPaciente.DATA_ENTREGA, dataEntrega);
+        CasoPacienteDTO casoPacienteDTO = new CasoPacienteDTO(
+                numeroExame.trim(),
+                dataSolicitacao.trim(),
+                dataEntrega.trim(),
+                etapaSelecionada,
+                pacienteIdParaSalvar,
+                nomePaciente.trim(),
+                dataNascimento.trim(),
+                Sexo.fromRadioId(checkedRadioButtonId),
+                numeroSus.trim(),
+                ""
+        );
 
-        intentResposta.putExtra(KEY_MODO, modo);
+        if (modo == MODO_NOVO) {
+            Long novoId = db.getCasoPacienteDAO().insert(casoPacienteDTO);
 
-        if (modo == MODO_EDITAR) {
-            intentResposta.putExtra("CASO_ID", casoId);
-            intentResposta.putExtra("PACIENTE_ID", pacienteId);
+            if (novoId <= 0) {
+                UtilsAlert.mostrarAviso(this, R.string.houve_um_problema_ao_salvar_o_caso);
+                return;
+            }
+            casoPacienteDTO.setCasoId(novoId);
+
+        } else {
+            casoPacienteDTO.setCasoId(casoOrginal.getCasoId());
+            db.getCasoPacienteDAO().update(casoPacienteDTO);
         }
 
-        setResult(RESULT_OK, intentResposta);
+        setResult(RESULT_OK);
 
         UtilsAlert.mostrarAviso(this, R.string.caso_salvo_com_sucesso);
 

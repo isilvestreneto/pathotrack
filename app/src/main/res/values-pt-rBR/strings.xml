@@ -66,4 +66,9 @@
     <string name="sim">Sim</string>+
     <string name="nao">Não</string>
     <string name="deseja_apagar">Você deseja apagar o prontuário </string>
+    <string name="houve_um_problema_ao_salvar_o_caso">Houve um problema ao salvar o caso</string>
+    <string name="houve_um_problema_ao_excluir">Houve um problema ao excluir</string>
+    <string name="sem_resultados_para_este_filtro">Sem resultados para este filtro</string>
+    <string name="sem_casos">Nenhum caso cadastrado</string>
+
 </resources>

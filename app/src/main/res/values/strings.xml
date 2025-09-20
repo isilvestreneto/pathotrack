@@ -67,4 +67,9 @@
     <string name="sim">Yes</string>
     <string name="nao">No</string>
     <string name="deseja_apagar">"Do you want to delete the case "</string>
+    <string name="houve_um_problema_ao_salvar_o_caso">There was a problem saving the case</string>
+    <string name="houve_um_problema_ao_excluir">There was a problem deleting</string>
+    <string name="sem_resultados_para_este_filtro">No results for this filter</string>
+    <string name="sem_casos">No cases registered</string>
+
 </resources>
