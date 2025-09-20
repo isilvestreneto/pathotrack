@@ -61,4 +61,10 @@
     <string name="ordenar_antigo_novo">oldest → newest</string>
     <string name="ordenar_novo_antigo">newest → oldest</string>
     <string name="checkboxManterEstado">Maintain filter/sort preference</string>
+    <string name="alerta">Warning</string>
+    <string name="caso_salvo_com_sucesso">Case saved successfully!</string>
+    <string name="confirmacao">Confirmation</string>
+    <string name="sim">Yes</string>
+    <string name="nao">No</string>
+    <string name="deseja_apagar">"Do you want to delete the case "</string>
 </resources>

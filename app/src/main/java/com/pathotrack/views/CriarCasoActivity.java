@@ -10,7 +10,6 @@ import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.RadioGroup;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -22,12 +21,14 @@ import com.pathotrack.R;
 import com.pathotrack.domain.enums.Etapa;
 import com.pathotrack.domain.enums.Sexo;
 import com.pathotrack.utils.ChavesCasoPaciente;
+import com.pathotrack.utils.UtilsAlert;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class CriarCasoActivity extends AppCompatActivity {
 
@@ -91,8 +92,10 @@ public class CriarCasoActivity extends AppCompatActivity {
                     Etapa etapa = parseEtapaFlex(etapaRaw);
                     if (etapa != null) {
                         etapaView.setText(etapa.label(etapaView), false);
+                        etapaView.setTag(etapa);
                     } else {
                         etapaView.setText(etapaRaw);
+                        etapaView.setTag(null);
                     }
                 }
             }
@@ -249,7 +252,7 @@ public class CriarCasoActivity extends AppCompatActivity {
     private static String millisToIso(long ms) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             DateTimeFormatter ISO = DateTimeFormatter.ISO_LOCAL_DATE;        // yyyy-MM-dd
-            return epochMsToLocalDate(ms).format(ISO);
+            return Objects.requireNonNull(epochMsToLocalDate(ms)).format(ISO);
         }
         return "";
     }
@@ -257,7 +260,7 @@ public class CriarCasoActivity extends AppCompatActivity {
     private static String millisToDisplay(long ms) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             DateTimeFormatter BR = DateTimeFormatter.ofPattern("dd/MM/uuuu");
-            return epochMsToLocalDate(ms).format(BR);
+            return Objects.requireNonNull(epochMsToLocalDate(ms)).format(BR);
         }
         return "";
     }
@@ -265,30 +268,23 @@ public class CriarCasoActivity extends AppCompatActivity {
     public void salvarValores(View view) {
         String numeroExame = editTextNumeroExame.getText().toString();
 
-        if (numeroExame == null || numeroExame.trim().isEmpty()) {
-            Toast.makeText(this,
-                    R.string.faltou_entrar_com_o_n_mero_do_exame,
-                    Toast.LENGTH_LONG).show();
+        if (numeroExame.trim().isEmpty()) {
+            UtilsAlert.mostrarAviso(this, R.string.faltou_entrar_com_o_n_mero_do_exame);
             editTextNumeroExame.requestFocus();
             return;
         }
 
         String nomePaciente = editTextNomePaciente.getText().toString();
 
-        if (nomePaciente == null || nomePaciente.trim().isEmpty()) {
-            Toast.makeText(this,
-                    R.string.faltou_entrar_com_o_nome_do_paciente,
-                    Toast.LENGTH_LONG).show();
-            editTextNomePaciente.requestFocus();
+        if (nomePaciente.trim().isEmpty()) {
+            UtilsAlert.mostrarAviso(this, R.string.faltou_entrar_com_o_nome_do_paciente);
             return;
         }
 
         String dataNascimento = editTextDataNascimento.getText().toString();
 
-        if (dataNascimento == null || dataNascimento.trim().isEmpty()) {
-            Toast.makeText(this,
-                    R.string.faltou_entrar_com_a_data_de_nascimento,
-                    Toast.LENGTH_LONG).show();
+        if (dataNascimento.trim().isEmpty()) {
+            UtilsAlert.mostrarAviso(this, R.string.faltou_entrar_com_a_data_de_nascimento);
             editTextDataNascimento.requestFocus();
             return;
         }
@@ -299,17 +295,13 @@ public class CriarCasoActivity extends AppCompatActivity {
                 LocalDate nascimento = LocalDate.parse(dataNascimento.trim(), formatter);
 
                 if (nascimento.isAfter(LocalDate.now())) {
-                    Toast.makeText(this,
-                            R.string.data_nascimento_no_futuro,
-                            Toast.LENGTH_LONG).show();
+                    UtilsAlert.mostrarAviso(this, R.string.data_nascimento_no_futuro);
                     editTextDataNascimento.requestFocus();
                     return;
                 }
 
             } catch (DateTimeParseException e) {
-                Toast.makeText(this,
-                        R.string.data_invalida,
-                        Toast.LENGTH_LONG).show();
+                UtilsAlert.mostrarAviso(this, R.string.data_invalida);
                 editTextDataNascimento.requestFocus();
                 return;
             }
@@ -317,50 +309,40 @@ public class CriarCasoActivity extends AppCompatActivity {
 
         int checkedRadioButtonId = radioGroupSexo.getCheckedRadioButtonId();
         if (checkedRadioButtonId == -1) {
-            Toast.makeText(this,
-                    R.string.faltou_selecionar_o_sexo,
-                    Toast.LENGTH_LONG).show();
+            UtilsAlert.mostrarAviso(this, R.string.faltou_selecionar_o_sexo);
             radioGroupSexo.requestFocus();
             return;
         }
 
         String numeroSus = editTextSus.getText().toString();
 
-        if (numeroSus == null || numeroSus.trim().isEmpty()) {
-            Toast.makeText(this,
-                    R.string.faltou_entrar_com_o_n_mero_do_sus,
-                    Toast.LENGTH_LONG).show();
+        if (numeroSus.trim().isEmpty()) {
+            UtilsAlert.mostrarAviso(this, R.string.faltou_entrar_com_o_n_mero_do_sus);
             editTextSus.requestFocus();
             return;
         }
 
         String dataSolicitacao = editTextDataSolicitacao.getText().toString();
 
-        if (dataSolicitacao == null || dataSolicitacao.trim().isEmpty()) {
-            Toast.makeText(this,
-                    R.string.faltou_entrar_com_a_data_de_solicita_o,
-                    Toast.LENGTH_LONG).show();
+        if (dataSolicitacao.trim().isEmpty()) {
+            UtilsAlert.mostrarAviso(this, R.string.faltou_entrar_com_a_data_de_solicita_o);
             editTextDataSolicitacao.requestFocus();
             return;
         }
 
         String dataEntrega = editTextDataEntrega.getText().toString();
 
-        if (dataEntrega == null || dataEntrega.trim().isEmpty()) {
-            Toast.makeText(this,
-                    R.string.faltou_entrar_com_a_data_de_entrega,
-                    Toast.LENGTH_LONG).show();
+        if (dataEntrega.trim().isEmpty()) {
+            UtilsAlert.mostrarAviso(this, R.string.faltou_entrar_com_a_data_de_entrega);
             editTextDataEntrega.requestFocus();
             return;
         }
 
 
-        String etapa = etapaView.getText().toString();
+        Etapa etapaSelecionada = (Etapa) etapaView.getTag();
 
-        if (etapa == null || etapa.trim().isEmpty()) {
-            Toast.makeText(this,
-                    R.string.faltou_entrar_com_a_etapa,
-                    Toast.LENGTH_LONG).show();
+        if (etapaSelecionada == null) {
+            UtilsAlert.mostrarAviso(this, R.string.faltou_entrar_com_a_etapa);
             etapaView.requestFocus();
             return;
         }
@@ -372,7 +354,7 @@ public class CriarCasoActivity extends AppCompatActivity {
         intentResposta.putExtra(ChavesCasoPaciente.SEXO, Sexo.fromRadioId(checkedRadioButtonId).name());
         intentResposta.putExtra(ChavesCasoPaciente.NUMERO_SUS, numeroSus);
         intentResposta.putExtra(ChavesCasoPaciente.DATA_SOLICITACAO, dataSolicitacao);
-        intentResposta.putExtra(ChavesCasoPaciente.ETAPA, etapa);
+        intentResposta.putExtra(ChavesCasoPaciente.ETAPA, etapaSelecionada.name());
         intentResposta.putExtra(ChavesCasoPaciente.DATA_ENTREGA, dataEntrega);
 
         intentResposta.putExtra(KEY_MODO, modo);
@@ -384,10 +366,7 @@ public class CriarCasoActivity extends AppCompatActivity {
 
         setResult(RESULT_OK, intentResposta);
 
-        Toast.makeText(this,
-                "Dados salvos com sucesso!",
-                Toast.LENGTH_LONG
-        ).show();
+        UtilsAlert.mostrarAviso(this, R.string.caso_salvo_com_sucesso);
 
         finish();
     }
@@ -401,9 +380,7 @@ public class CriarCasoActivity extends AppCompatActivity {
         editTextDataSolicitacao.setText(null);
         etapaView.setText(null, false);
         editTextNumeroExame.requestFocus();
-        Toast.makeText(this,
-                R.string.as_entradas_foram_apagadas,
-                Toast.LENGTH_LONG).show();
+        UtilsAlert.mostrarAviso(this, R.string.as_entradas_foram_apagadas);
     }
 
 

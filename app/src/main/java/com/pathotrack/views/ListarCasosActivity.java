@@ -1,6 +1,7 @@
 package com.pathotrack.views;
 
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Build;
@@ -30,6 +31,7 @@ import com.pathotrack.domain.enums.Sexo;
 import com.pathotrack.services.CasoService;
 import com.pathotrack.utils.ChavesAplicacao;
 import com.pathotrack.utils.ChavesCasoPaciente;
+import com.pathotrack.utils.UtilsAlert;
 import com.pathotrack.views.adapters.CasoAdapter;
 
 import java.time.LocalDate;
@@ -503,14 +505,23 @@ public class ListarCasosActivity extends AppCompatActivity {
 
         CasoPacienteDTO alvo = filteredCasos.get(absoluteIndex);
 
-        filteredCasos.remove(absoluteIndex);
+        String mensagem = getString(R.string.deseja_apagar) + alvo.getProntuario() + "?";
 
-        allCasos.remove(alvo);
+        DialogInterface.OnClickListener listenerSim = new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                filteredCasos.remove(absoluteIndex);
 
-        totalPages = Math.max(1, (int) Math.ceil(filteredCasos.size() / (double) PAGE_SIZE));
-        if (currentPage >= totalPages) currentPage = totalPages - 1;
+                allCasos.remove(alvo);
 
-        renderCurrentPage();
+                totalPages = Math.max(1, (int) Math.ceil(filteredCasos.size() / (double) PAGE_SIZE));
+                if (currentPage >= totalPages) currentPage = totalPages - 1;
+                renderCurrentPage();
+            }
+        };
+
+        UtilsAlert.confirmarAcao(this, mensagem, listenerSim, null);
+
     }
 
     private void lerPreferencias() {

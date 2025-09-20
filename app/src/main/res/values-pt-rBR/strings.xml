@@ -60,4 +60,10 @@
     <string name="ordenar_antigo_novo">mais antigo → mais novo</string>
     <string name="ordenar_novo_antigo">mais novo → mais antigo</string>
     <string name="checkboxManterEstado">Manter preferência de filtro/ordenação</string>
+    <string name="alerta">Alerta</string>
+    <string name="caso_salvo_com_sucesso">Caso salvo com sucesso!</string>
+    <string name="confirmacao">Confirmação</string>
+    <string name="sim">Sim</string>+
+    <string name="nao">Não</string>
+    <string name="deseja_apagar">Você deseja apagar o prontuário </string>
 </resources>
