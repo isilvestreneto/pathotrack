@@ -34,7 +34,7 @@
                 android:id="@+id/lblPrevisao"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Previsão:"
+                android:text="@string/previsao"
                 android:textAppearance="?attr/textAppearanceLabelLarge"
                 android:textColor="?attr/colorOnSurfaceVariant" />
 
@@ -85,7 +85,7 @@
                 android:id="@+id/lblPaciente"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Paciente:"
+                android:text="@string/paciente"
                 android:textAppearance="?attr/textAppearanceLabelMedium"
                 android:textColor="?attr/colorOnSurfaceVariant" />
 
@@ -114,7 +114,7 @@
                 android:id="@+id/lblSexo"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Sexo:"
+                android:text="@string/sexo"
                 android:textAppearance="?attr/textAppearanceLabelMedium"
                 android:textColor="?attr/colorOnSurfaceVariant" />
 
@@ -144,7 +144,7 @@
                 android:id="@+id/lblIdade"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Idade:"
+                android:text="@string/idade"
                 android:textAppearance="?attr/textAppearanceLabelMedium"
                 android:textColor="?attr/colorOnSurfaceVariant" />
 
@@ -173,7 +173,7 @@
                 android:id="@+id/lblProntuario"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Prontuário:"
+                android:text="@string/prontuario"
                 android:textAppearance="?attr/textAppearanceLabelMedium"
                 android:textColor="?attr/colorOnSurfaceVariant" />
 
@@ -232,7 +232,7 @@
                 android:id="@+id/lblExame"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Nº Exame:"
+                android:text="@string/textviewNumeroExame"
                 android:textAppearance="?attr/textAppearanceLabelMedium"
                 android:textColor="?attr/colorOnSurfaceVariant" />
 

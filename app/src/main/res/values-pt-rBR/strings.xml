@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="textviewNumeroExame">Número do exame</string>
+    <string name="novoCaso">Novo Caso</string>
+    <string name="paciente">Paciente</string>
+    <string name="nomePaciente">Nome do Paciente</string>
+    <string name="dataNascimento">Data de Nascimento</string>
+    <string name="sexo">Sexo</string>
+    <string name="masculino">Masculino</string>
+    <string name="feminino">Feminino</string>
+    <string name="textViewSus">SUS</string>
+    <string name="dataRequisicao">Data da requisição</string>
+    <string name="dataEntrega">Data da entrega</string>
+    <string name="etapaAtual">Etapa atual</string>
+    <string name="salvar">Salvar</string>
+    <string name="limparCampos">Limpar campos</string>
+    <string name="selecione_data_nascimento">Selecionar data de nascimento</string>
+    <string name="selecione_data_entrega">Selecionar data de entrega</string>
+    <string name="selecione_data_solicitacao">Selecionar data de solicitação</string>
+    <string name="as_entradas_foram_apagadas">As entradas foram apagadas!</string>
+    <string name="faltou_entrar_com_o_n_mero_do_exame">Faltou entrar com o número do exame!</string>
+    <string name="faltou_entrar_com_o_nome_do_paciente">Faltou entrar com o nome do paciente!</string>
+    <string name="faltou_entrar_com_a_data_de_nascimento">Faltou entrar com a data de nascimento!</string>
+    <string name="faltou_entrar_com_o_n_mero_do_sus">Faltou entrar com o número do SUS</string>
+    <string name="faltou_entrar_com_a_data_de_solicita_o">Faltou entrar com a data de solicitação</string>
+    <string name="faltou_entrar_com_a_data_de_entrega">Faltou entrar com a data de entrega</string>
+    <string name="faltou_entrar_com_a_etapa">Faltou entrar com a etapa</string>
+    <string name="faltou_selecionar_o_sexo">Faltou selecionar o sexo!</string>
+    <string name="exibicaoFiltro">Exibição</string>
+    <string name="ordenarPor">Ordenar por</string>
+    <string name="previsaoText">Previsão</string>
+    <string name="listagem_de_casos">Listagem de casos</string>
+    <string name="curso">Tecnologia Java</string>
+    <string name="email">isilvestreneto@gmail.com</string>
+    <string name="descricao_app">O PathoTrack é um aplicativo desenvolvido para auxiliar médicos patologistas no gerenciamento de casos clínicos. Ele permite registrar informações de pacientes, acompanhar cada etapa do exame — do recebimento à emissão do laudo — e organizar a lista de casos com filtros e ordenações para facilitar o acompanhamento e priorização.</string>
+    <string name="utfpr" translatable="false">Universidade Tecnológica Federal do Paraná — UTFPR</string>
+    <string name="author_res">Autor</string>
+    <string name="curso_res">Curso</string>
+    <string name="email_res" translatable="false">E-mail</string>
+    <string name="adicionar">Adicionar</string>
+    <string name="sobre">Sobre</string>
+    <string name="semCasos">Não há casos para exibir no momento. \nCadastre um novo para continuar!</string>
+    <string name="valorFiltro">valorFiltro</string>
+    <string name="editar">Editar</string>
+    <string name="excluir">Excluir</string>
+    <string name="data_nascimento_no_futuro">Data de nascimento não pode ser no futuro</string>
+    <string name="data_invalida">Data inválida. Verifique e tente novamente!</string>
+    <string name="idade">Idade</string>
+    <string name="previsao">Previsão</string>
+    <string name="prontuario">Prontuário</string>
+    <string name="etapa_recebimento">Recebimento</string>
+    <string name="etapa_macroscopia">Macroscopia</string>
+    <string name="etapa_processamento">Processamento</string>
+    <string name="etapa_corte_histologico">Corte histológico</string>
+    <string name="etapa_laudo">Laudo</string>
+    <string name="etapa_finalizado">Finalizado</string>
+    <string name="editarCaso">Edição de caso</string>
+    <string name="nenhum">Nenhum</string>
+    <string name="etapa">Etapa</string>
+    <string name="ordenar_antigo_novo">mais antigo → mais novo</string>
+    <string name="ordenar_novo_antigo">mais novo → mais antigo</string>
+    <string name="checkboxManterEstado">Manter preferência de filtro/ordenação</string>
+</resources>

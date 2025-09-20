@@ -1,12 +1,15 @@
 package com.pathotrack.views;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.ContextMenu;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.CheckBox;
 import android.widget.TextView;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -25,6 +28,7 @@ import com.pathotrack.domain.entities.CasoPacienteDTO;
 import com.pathotrack.domain.enums.Etapa;
 import com.pathotrack.domain.enums.Sexo;
 import com.pathotrack.services.CasoService;
+import com.pathotrack.utils.ChavesAplicacao;
 import com.pathotrack.utils.ChavesCasoPaciente;
 import com.pathotrack.views.adapters.CasoAdapter;
 
@@ -33,6 +37,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+
+// TODO Exiba um AlertDialog para confirmar a ação do usuário antes de excluir dados persistidos;
+
 
 public class ListarCasosActivity extends AppCompatActivity {
     private final CasoService casoService;
@@ -44,14 +51,25 @@ public class ListarCasosActivity extends AppCompatActivity {
     private View filtersRow, paginationBar;
     private TextInputEditText filtroValor;
     private MaterialAutoCompleteTextView exibicao, ordenarPor;
+    private CheckBox checkbox;
 
     private static final int PAGE_SIZE = 5;
     private int currentPage = 0;
     private int totalPages = 1;
     private List<CasoPacienteDTO> allCasos = new ArrayList<>();
     private List<CasoPacienteDTO> filteredCasos = new ArrayList<>();
-
     private int selectedAdapterPosition = RecyclerView.NO_POSITION;
+    private static final String T_CAMPO_NONE = "NONE";
+    private static final String T_CAMPO_ETAPA = "ETAPA";
+    private static final String T_SORT_ASC = "ASC";
+    private static final String T_SORT_DESC = "DESC";
+
+    private static final String KEY_KEEP = "keep_config";
+    private static final String KEY_FILTER_VALUE = "filter_value";
+    private static final String KEY_CAMPO = "campo_token";
+    private static final String KEY_SORT = "sort_token";
+    private boolean sugerirConfiguracao = false;
+    private boolean isRestoring = false;
 
     public ListarCasosActivity() {
         this.casoService = new CasoService();
@@ -72,17 +90,21 @@ public class ListarCasosActivity extends AppCompatActivity {
         filtroValor = findViewById(R.id.filtroValor);
         exibicao = findViewById(R.id.exibicao);
         ordenarPor = findViewById(R.id.ordenarPor);
+        checkbox = findViewById(R.id.checkbox);
 
-        String[] exibicaoOpts = new String[]{"Nenhum", "Etapa"};
+        String[] exibicaoOpts = new String[]{
+                getString(R.string.nenhum),
+                getString(R.string.etapa)
+        };
 
-        String[] ordenarOpts = new String[]{"mais antigo → mais novo", "mais novo → mais antigo"};
+        String[] ordenarOpts = new String[]{
+                getString(R.string.ordenar_antigo_novo),
+                getString(R.string.ordenar_novo_antigo)
+        };
+
 
         exibicao.setSimpleItems(exibicaoOpts);
         ordenarPor.setSimpleItems(ordenarOpts);
-
-        // valor inicial
-        exibicao.setText("Nenhum", false);
-        ordenarPor.setText("mais antigo → mais novo", false);
 
         exibicao.setOnClickListener(v -> exibicao.showDropDown());
         ordenarPor.setOnClickListener(v -> ordenarPor.showDropDown());
@@ -91,54 +113,95 @@ public class ListarCasosActivity extends AppCompatActivity {
         rvCasos.setLayoutManager(new LinearLayoutManager(this));
         rvCasos.setAdapter(adapter);
 
-        // Busca mockada (depois troca por repositório/HTTP)
         List<CasoPacienteDTO> result = CasoService.buscarCasos();
 
         /**
          * TODO: futuramente, quando salvar a entidade em algum lugar, descomentar essa linha
          * TODO: e inserir a busca de onde tiver com os dados persistidos
          */
-
         allCasos = (result != null) ? result : java.util.Collections.emptyList();
         filteredCasos = new ArrayList<>(allCasos);
 
         totalPages = Math.max(1, (int) Math.ceil(allCasos.size() / (double) PAGE_SIZE));
 
-        updatePage();
+        isRestoring = true;
+        lerPreferencias();
+        isRestoring = false;
+
+        if (sugerirConfiguracao) {
+            applyFilterAndSort();
+        } else {
+            updatePage();
+        }
 
         adapter.setOnItemLongClickListener(pos -> selectedAdapterPosition = pos);
 
         btnPrev.setOnClickListener(v -> {
             if (currentPage > 0) {
                 currentPage--;
-                updatePage();
+                updatePageFromFiltered();
             }
         });
 
         btnNext.setOnClickListener(v -> {
             if (currentPage < totalPages - 1) {
                 currentPage++;
-                updatePage();
+                updatePageFromFiltered();
             }
         });
-
-        exibicao.setOnItemClickListener((p, v, pos, id) -> applyFilterAndSort());
-        ordenarPor.setOnItemClickListener((p, v, pos, id) -> applyFilterAndSort());
+        exibicao.setOnItemClickListener((p, v, pos, id) -> {
+            if (isRestoring) return;
+            applyFilterAndSort();
+            savePrefsIfKeep();
+        });
+        ordenarPor.setOnItemClickListener((p, v, pos, id) -> {
+            if (isRestoring) return;
+            applyFilterAndSort();
+            savePrefsIfKeep();
+        });
 
         filtroValor.addTextChangedListener(new SimpleTextWatcher() {
             @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
+            public void onTextChanged(CharSequence s, int st, int b, int c) {
+                if (isRestoring) return;
                 applyFilterAndSort();
+                savePrefsIfKeep();
             }
+        });
+
+        checkbox.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isRestoring) return;
+
+            sugerirConfiguracao = isChecked;
+            SharedPreferences shared = getSharedPreferences(ChavesAplicacao.PREFERENCIAS, Context.MODE_PRIVATE);
+            SharedPreferences.Editor editor = shared.edit();
+            editor.putBoolean(KEY_KEEP, isChecked);
+
+            if (isChecked) {
+                String campoToken = getString(R.string.etapa).equalsIgnoreCase(safe(exibicao.getText()))
+                        ? T_CAMPO_ETAPA : T_CAMPO_NONE;
+
+                String sortToken = getString(R.string.ordenar_novo_antigo).equalsIgnoreCase(safe(ordenarPor.getText()))
+                        ? T_SORT_DESC : T_SORT_ASC;
+
+                editor.putString(KEY_CAMPO, campoToken);
+                editor.putString(KEY_FILTER_VALUE, safe(filtroValor.getText()));
+                editor.putString(KEY_SORT, sortToken);
+            } else {
+                editor.remove(KEY_CAMPO);
+                editor.remove(KEY_FILTER_VALUE);
+                editor.remove(KEY_SORT);
+            }
+            editor.apply();
         });
 
         registerForContextMenu(rvCasos);
     }
 
     private void applyFilterAndSort() {
-        String campo = safe(exibicao.getText());     // "Previsão", "Nome do paciente", etc.
-        String valor = safe(filtroValor.getText());  // texto digitado (ou vazio)
-        String ordem = safe(ordenarPor.getText());   // opção de ordenação
+        String campo = safe(exibicao.getText());
+        String valor = safe(filtroValor.getText());
+        String ordem = safe(ordenarPor.getText());
 
         // 1) FILTRO
         List<CasoPacienteDTO> base = new ArrayList<>(allCasos);
@@ -184,9 +247,9 @@ public class ListarCasosActivity extends AppCompatActivity {
     }
 
     private Comparator<CasoPacienteDTO> getComparator(String ordem) {
-        if ("mais antigo → mais novo".equalsIgnoreCase(ordem)) {
+        if (getString(R.string.ordenar_antigo_novo).equalsIgnoreCase(ordem)) {
             return java.util.Comparator.comparing(this::parseDateOrMax);
-        } else if ("mais novo → mais antigo".equalsIgnoreCase(ordem)) {
+        } else if (getString(R.string.ordenar_novo_antigo).equalsIgnoreCase(ordem)) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 return (a, b) -> parseDateOrMax(b).compareTo(parseDateOrMax(a));
             }
@@ -198,26 +261,45 @@ public class ListarCasosActivity extends AppCompatActivity {
         String s = safe(c.getDataEntrega()).trim();
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                if (s.isEmpty()) return LocalDate.MAX;
                 return LocalDate.parse(s, DateTimeFormatter.ofPattern("dd/MM/uuuu"));
             }
         } catch (Exception ignored) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                return LocalDate.MAX;
-            }
         }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) return LocalDate.MAX;
         return null;
     }
 
     private boolean matchesFiltro(CasoPacienteDTO c, String campo, String valor) {
-        if (valor.isEmpty() || "Nenhum".equalsIgnoreCase(campo)) return true;
+        if (valor.isEmpty() || getString(R.string.nenhum).equalsIgnoreCase(campo)) return true;
 
-        if ("Etapa".equalsIgnoreCase(campo)) {
-            String alvo = safe(c.getEtapa());
-            String q = valor.trim().toLowerCase();
-            return alvo.toLowerCase().startsWith(q);
+        if (getString(R.string.etapa).equalsIgnoreCase(campo)) {
+            String alvo = etapaDisplay(c);
+            String q = normalize(valor);
+            return normalize(alvo).startsWith(q);
         }
 
         return true;
+    }
+
+    private static String normalize(String s) {
+        if (s == null) return "";
+        String n = java.text.Normalizer.normalize(s, java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "");
+        return n.trim().toLowerCase(java.util.Locale.ROOT);
+    }
+
+    private String etapaDisplay(CasoPacienteDTO c) {
+        Object et = c.getEtapa();
+        if (et instanceof Etapa) {
+            return getString(((Etapa) et).getLabelResId());
+        }
+        if (et instanceof String) {
+            Etapa e = Etapa.parse((String) et);
+            if (e != null) return getString(e.getLabelResId());
+            return (String) et;
+        }
+        return "";
     }
 
     public abstract class SimpleTextWatcher implements android.text.TextWatcher {
@@ -235,7 +317,6 @@ public class ListarCasosActivity extends AppCompatActivity {
         getMenuInflater().inflate(R.menu.top_app_bar_menu, menu);
         return true;
     }
-
 
     private void updatePage() {
         int from = currentPage * PAGE_SIZE;
@@ -282,7 +363,7 @@ public class ListarCasosActivity extends AppCompatActivity {
     }
 
     private static String safe(Object o) {
-        return o == null ? "-" : String.valueOf(o);
+        return (o == null) ? "" : String.valueOf(o);
     }
 
     @Override
@@ -349,7 +430,13 @@ public class ListarCasosActivity extends AppCompatActivity {
         }
 
         Sexo sexo = Sexo.valueOf(sexoName);
-        Etapa etapa = Etapa.fromLabel(etapaLabel);
+        Etapa etapa = Etapa.parse(etapaLabel);
+        if (etapa == null) {
+            etapa = Etapa.parse(etapaLabel);
+            if (etapa == null) {
+                throw new IllegalArgumentException("Etapa inválida: " + etapaLabel);
+            }
+        }
 
         long idCaso = data.getLongExtra(ChavesCasoPaciente.CASO_ID, -1L);
         long idPaciente = data.getLongExtra(ChavesCasoPaciente.PACIENTE_ID, -1L);
@@ -406,7 +493,7 @@ public class ListarCasosActivity extends AppCompatActivity {
         intent.putExtra(ChavesCasoPaciente.SEXO, Sexo.fromRadioId(casoPacienteDTO.getSexo().getRadioId()).name());
         intent.putExtra(ChavesCasoPaciente.NUMERO_SUS, casoPacienteDTO.getSus());
         intent.putExtra(ChavesCasoPaciente.DATA_SOLICITACAO, casoPacienteDTO.getDataRequisicao());
-        intent.putExtra(ChavesCasoPaciente.ETAPA, casoPacienteDTO.getEtapa().getLabel());
+        intent.putExtra(ChavesCasoPaciente.ETAPA, casoPacienteDTO.getEtapa().name());
         intent.putExtra(ChavesCasoPaciente.DATA_ENTREGA, casoPacienteDTO.getDataEntrega());
         launcherEditarCaso.launch(intent);
     }
@@ -424,5 +511,55 @@ public class ListarCasosActivity extends AppCompatActivity {
         if (currentPage >= totalPages) currentPage = totalPages - 1;
 
         renderCurrentPage();
+    }
+
+    private void lerPreferencias() {
+        SharedPreferences shared = getSharedPreferences(ChavesAplicacao.PREFERENCIAS, Context.MODE_PRIVATE);
+        sugerirConfiguracao = shared.getBoolean(KEY_KEEP, false);
+        checkbox.setChecked(sugerirConfiguracao);
+
+        if (sugerirConfiguracao) {
+            String campo = shared.getString(KEY_CAMPO, T_CAMPO_NONE);
+            String valor = shared.getString(KEY_FILTER_VALUE, "");
+            String sort = shared.getString(KEY_SORT, T_SORT_ASC);
+
+            exibicao.setText(
+                    T_CAMPO_ETAPA.equals(campo) ? getString(R.string.etapa) : getString(R.string.nenhum),
+                    false
+            );
+
+            filtroValor.setText(valor);
+
+            if (T_SORT_ASC.equals(sort)) {
+                ordenarPor.setText(getString(R.string.ordenar_antigo_novo), false);
+            } else {
+                ordenarPor.setText(getString(R.string.ordenar_novo_antigo), false);
+            }
+        } else {
+            exibicao.setText(getString(R.string.nenhum), false);
+            filtroValor.setText("");
+            ordenarPor.setText(getString(R.string.ordenar_novo_antigo), false);
+        }
+    }
+
+    private void savePrefsIfKeep() {
+        if (!sugerirConfiguracao) return;
+        SharedPreferences shared = getSharedPreferences(ChavesAplicacao.PREFERENCIAS, Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = shared.edit();
+
+        String campoToken = T_CAMPO_NONE;
+        String campo = safe(exibicao.getText());
+        if (getString(R.string.etapa).equalsIgnoreCase(campo)) campoToken = T_CAMPO_ETAPA;
+
+        String sortToken = T_SORT_ASC;
+        String ordem = safe(ordenarPor.getText());
+        if (getString(R.string.ordenar_novo_antigo).equalsIgnoreCase(ordem))
+            sortToken = T_SORT_DESC;
+
+        editor.putBoolean(KEY_KEEP, true);
+        editor.putString(KEY_CAMPO, campoToken);
+        editor.putString(KEY_FILTER_VALUE, safe(filtroValor.getText()));
+        editor.putString(KEY_SORT, sortToken);
+        editor.apply();
     }
 }

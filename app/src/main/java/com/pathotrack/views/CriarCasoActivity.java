@@ -25,6 +25,7 @@ import com.pathotrack.utils.ChavesCasoPaciente;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -66,9 +67,9 @@ public class CriarCasoActivity extends AppCompatActivity {
             modo = bundle.getInt(KEY_MODO);
 
             if (modo == MODO_NOVO) {
-                titulo.setText("Criar Caso");
+                titulo.setText(R.string.novoCaso);
             } else {
-                titulo.setText("Editar Caso");
+                titulo.setText(R.string.editarCaso);
 
                 casoId = bundle.getLong("CASO_ID", -1L);
                 pacienteId = bundle.getLong("PACIENTE_ID", -1L);
@@ -89,7 +90,7 @@ public class CriarCasoActivity extends AppCompatActivity {
                 if (etapaRaw != null) {
                     Etapa etapa = parseEtapaFlex(etapaRaw);
                     if (etapa != null) {
-                        etapaView.setText(etapa.getLabel(), false);
+                        etapaView.setText(etapa.label(etapaView), false);
                     } else {
                         etapaView.setText(etapaRaw);
                     }
@@ -155,7 +156,7 @@ public class CriarCasoActivity extends AppCompatActivity {
 
         String[] itens = new String[Etapa.values().length];
         for (int i = 0; i < Etapa.values().length; i++) {
-            itens[i] = Etapa.values()[i].getLabel();
+            itens[i] = getString(Etapa.values()[i].getLabelResId());
         }
 
         ArrayAdapter<String> adapter = new ArrayAdapter<>(
@@ -163,6 +164,7 @@ public class CriarCasoActivity extends AppCompatActivity {
                 android.R.layout.simple_list_item_1,
                 itens
         );
+
         etapaView.setAdapter(adapter);
         etapaView.setKeyListener(null);
         etapaView.setOnClickListener(v -> etapaView.showDropDown());
@@ -174,17 +176,28 @@ public class CriarCasoActivity extends AppCompatActivity {
         MaterialAutoCompleteTextView etapaDropdown = (MaterialAutoCompleteTextView) etapaView;
 
         List<String> labels = new ArrayList<>();
-        for (Etapa e : Etapa.values()) labels.add(e.getLabel());
+        for (Etapa e : Etapa.values()) {
+            labels.add(getString(e.getLabelResId()));
+        }
 
         ArrayAdapter<String> adapter = new ArrayAdapter<>(
-                this, android.R.layout.simple_list_item_1, labels
+                this,
+                android.R.layout.simple_list_item_1,
+                labels
         );
         etapaDropdown.setAdapter(adapter);
 
+        etapaDropdown.setOnItemClickListener((parent, view, position, id) -> {
+            Etapa selected = Etapa.values()[position];
+            etapaDropdown.setTag(selected);
+        });
+
         if (TextUtils.isEmpty(etapaDropdown.getText())) {
-            etapaDropdown.setText(Etapa.RECEBIMENTO.getLabel(), /*filter=*/false);
+            etapaDropdown.setText(getString(Etapa.RECEBIMENTO.getLabelResId()), /* filter= */ false);
+            etapaDropdown.setTag(Etapa.RECEBIMENTO);
         }
     }
+
 
     private void setTextIfPresent(Bundle b, String key, TextView view) {
         if (b.containsKey(key)) {
@@ -195,21 +208,7 @@ public class CriarCasoActivity extends AppCompatActivity {
 
     @Nullable
     private Etapa parseEtapaFlex(String raw) {
-        String trimmed = raw.trim();
-        try {
-            return Etapa.valueOf(trimmed.toUpperCase()
-                    .replace(' ', '_')
-                    .replace('-', '_'));
-        } catch (IllegalArgumentException ignored) { }
-
-        try {
-            return Etapa.fromLabel(trimmed);
-        } catch (IllegalArgumentException ignored) { }
-
-        for (Etapa e : Etapa.values()) {
-            if (e.getLabel().equalsIgnoreCase(trimmed)) return e;
-        }
-        return null;
+        return Etapa.parse(raw);
     }
 
     private void selectSexo(RadioGroup group, String sexoName) {
@@ -292,6 +291,28 @@ public class CriarCasoActivity extends AppCompatActivity {
                     Toast.LENGTH_LONG).show();
             editTextDataNascimento.requestFocus();
             return;
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            try {
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/uuuu");
+                LocalDate nascimento = LocalDate.parse(dataNascimento.trim(), formatter);
+
+                if (nascimento.isAfter(LocalDate.now())) {
+                    Toast.makeText(this,
+                            R.string.data_nascimento_no_futuro,
+                            Toast.LENGTH_LONG).show();
+                    editTextDataNascimento.requestFocus();
+                    return;
+                }
+
+            } catch (DateTimeParseException e) {
+                Toast.makeText(this,
+                        R.string.data_invalida,
+                        Toast.LENGTH_LONG).show();
+                editTextDataNascimento.requestFocus();
+                return;
+            }
         }
 
         int checkedRadioButtonId = radioGroupSexo.getCheckedRadioButtonId();

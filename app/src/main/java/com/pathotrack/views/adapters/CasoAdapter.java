@@ -63,14 +63,14 @@ public class CasoAdapter extends RecyclerView.Adapter<CasoAdapter.CasoViewHolder
         h.tvNumeroExame.setText(nz(c.getNumeroExame()));
         Etapa etapaEnum = null;
 
-        try {
-            Object et = c.getEtapa();
-            if (et instanceof Etapa) {
-                etapaEnum = (Etapa) et;
-            } else if (et != null) {
-                etapaEnum = Etapa.fromLabel(et.toString());
+        Object et = c.getEtapa();
+        if (et instanceof Etapa) {
+            etapaEnum = (Etapa) et;
+        } else if (et instanceof String) {
+            String s = (String) et;
+            if (!s.isBlank()) {
+                etapaEnum = Etapa.parse(s);
             }
-        } catch (Exception ignore) {
         }
 
         h.tvPaciente.setText(c.getPacienteId().toString());
@@ -88,7 +88,10 @@ public class CasoAdapter extends RecyclerView.Adapter<CasoAdapter.CasoViewHolder
         h.tvDatas.setText(previsao);
 
         if (h.chipEtapa != null) {
-            String etapaLabel = (etapaEnum != null) ? etapaEnum.getLabel() : nz(c.getEtapa());
+            String etapaLabel = (etapaEnum != null)
+                    ? etapaEnum.label(h.chipEtapa)
+                    : nz(c.getEtapa());
+
             h.chipEtapa.setText(etapaLabel);
 
             int bgColor = ContextCompat.getColor(h.chipEtapa.getContext(), etapaColorRes(etapaEnum));
