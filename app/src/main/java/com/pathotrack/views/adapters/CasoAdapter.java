@@ -185,10 +185,6 @@ public class CasoAdapter extends RecyclerView.Adapter<CasoAdapter.CasoViewHolder
         void onItemClick(CasoPacienteDTO caso);
     }
 
-    public void setOnItemClickListener(OnItemClickListener l) {
-        this.clickListener = l;
-    }
-
     static class CasoViewHolder extends RecyclerView.ViewHolder {
         TextView tvNumeroExame, tvDatas, tvPaciente, valIdade, valSus, valSexo, valProntuario, tvDataEntrega;
         Chip chipEtapa;

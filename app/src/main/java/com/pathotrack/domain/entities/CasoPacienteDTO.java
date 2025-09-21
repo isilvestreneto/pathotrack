@@ -12,7 +12,14 @@ import com.pathotrack.domain.enums.Etapa;
 import com.pathotrack.domain.enums.Sexo;
 import com.pathotrack.services.IdadeService;
 
-import java.util.UUID;
+import java.security.SecureRandom;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.Period;
+import java.time.format.DateTimeFormatter;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Locale;
 
 import javax.annotation.processing.Generated;
 
@@ -54,10 +61,6 @@ public class CasoPacienteDTO {
         this.dataNascimento = dataNascimento;
     }
 
-    public void setIdade(@NonNull String idade) {
-        this.idade = idade;
-    }
-
     public void setSexo(@NonNull Sexo sexo) {
         this.sexo = sexo;
     }
@@ -86,8 +89,6 @@ public class CasoPacienteDTO {
     @NonNull
     private String dataNascimento;
     @NonNull
-    private String idade = "";
-    @NonNull
     private Sexo sexo;
     @NonNull
     private String sus;
@@ -95,24 +96,30 @@ public class CasoPacienteDTO {
     @Generated(value = "org.jetbrains.annotations", date = "2024-06-10T16:20:30.123Z")
     private String prontuario;
 
+    @Ignore
+    private transient String cachedIdade;
+
     public CasoPacienteDTO() {
     }
 
     @Ignore
-    public CasoPacienteDTO(@NonNull String numeroExame, @NonNull String dataRequisicao,
-                           @NonNull String dataEntrega, @NonNull Etapa etapa, Long pacienteId,
-                           @NonNull String pacienteNome, @NonNull String dataNascimento,
-                           @NonNull Sexo sexo, @NonNull String sus, @NonNull String prontuario) {
+    public CasoPacienteDTO(@NonNull String numeroExame,
+                           @NonNull String dataRequisicao,
+                           @NonNull String dataEntrega,
+                           @NonNull Etapa etapa,
+                           Long pacienteId,
+                           @NonNull String pacienteNome,
+                           @NonNull String dataNascimento,
+                           @NonNull Sexo sexo,
+                           @NonNull String sus,
+                           @NonNull String prontuario) {
         this.numeroExame = numeroExame;
         this.dataRequisicao = dataRequisicao;
         this.dataEntrega = dataEntrega;
         this.etapa = etapa;
-        this.pacienteId = (pacienteId == null || pacienteId <= 0) ? gerarPacienteIdCurto() : pacienteId; // ✅ gera só aqui
+        this.pacienteId = (pacienteId == null || pacienteId <= 0) ? gerarPacienteIdCurto() : pacienteId;
         this.pacienteNome = pacienteNome;
         this.dataNascimento = dataNascimento;
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            this.idade = this.definirIdade(dataNascimento);
-        }
         this.sexo = sexo;
         this.sus = sus;
         this.prontuario = (prontuario == null || prontuario.isEmpty()) ? gerarProntuarioAleatorio() : prontuario;
@@ -126,7 +133,24 @@ public class CasoPacienteDTO {
     }
 
     public static String gerarProntuarioAleatorio() {
-        return UUID.randomUUID().toString();
+        final String ALFABETO = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        final SecureRandom RANDOM = new SecureRandom();
+
+        String data;
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            data = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMM"));
+        } else {
+            data = new SimpleDateFormat("yyyyMM").format(new Date());
+        }
+
+        StringBuilder sufixo = new StringBuilder(4);
+        for (int i = 0; i < 4; i++) {
+            int index = RANDOM.nextInt(ALFABETO.length());
+            sufixo.append(ALFABETO.charAt(index));
+        }
+
+        return data + "-" + sufixo;
     }
 
     private String definirIdade(String dataNascimento) {
@@ -173,10 +197,6 @@ public class CasoPacienteDTO {
         return dataNascimento;
     }
 
-    public String getIdade() {
-        return idade;
-    }
-
     public Sexo getSexo() {
         return sexo;
     }
@@ -188,6 +208,63 @@ public class CasoPacienteDTO {
     public String getProntuario() {
         return prontuario;
     }
+
+    private static String safe(String s) { return s == null ? "" : s.trim(); }
+
+    @Ignore
+    public String getIdade() {
+        if (cachedIdade != null) return cachedIdade;
+
+        String dn = dataNascimento == null ? "" : dataNascimento.trim();
+        if (dn.isEmpty()) return cachedIdade = "";
+
+        try {
+            int anos, meses;
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                LocalDate birth;
+
+                if (dn.matches("\\d{4}-\\d{2}-\\d{2}")) {
+                    birth = LocalDate.parse(dn);
+                } else {
+                    DateTimeFormatter BR =
+                            DateTimeFormatter.ofPattern("dd/MM/uuuu", Locale.ROOT);
+                    birth = LocalDate.parse(dn, BR);
+                }
+
+                LocalDate today = LocalDate.now();
+                if (birth.isAfter(today)) return cachedIdade = "";
+
+                Period p = Period.between(birth, today);
+                anos = p.getYears();
+                meses = p.getMonths();
+            } else {
+                // Fallback legado
+                SimpleDateFormat iso = new SimpleDateFormat("yyyy-MM-dd", Locale.ROOT);
+                SimpleDateFormat br  = new SimpleDateFormat("dd/MM/yyyy", Locale.ROOT);
+                iso.setLenient(false); br.setLenient(false);
+
+                Date birthDate = dn.matches("\\d{4}-\\d{2}-\\d{2}") ? iso.parse(dn) : br.parse(dn);
+                if (birthDate == null) return cachedIdade = "";
+
+                Calendar cBirth = Calendar.getInstance();
+                cBirth.setTime(birthDate);
+                Calendar cNow = Calendar.getInstance();
+
+                anos = cNow.get(Calendar.YEAR) - cBirth.get(Calendar.YEAR);
+                int m = cNow.get(Calendar.MONTH) - cBirth.get(Calendar.MONTH);
+                int d = cNow.get(Calendar.DAY_OF_MONTH) - cBirth.get(Calendar.DAY_OF_MONTH);
+                if (d < 0) m--;
+                if (m < 0) { anos--; m += 12; }
+                meses = m;
+            }
+
+            return cachedIdade = (meses > 0) ? (anos + "a " + meses + "m") : (anos + "a");
+        } catch (Exception e) {
+            return cachedIdade = "";
+        }
+    }
+
 
 
 }

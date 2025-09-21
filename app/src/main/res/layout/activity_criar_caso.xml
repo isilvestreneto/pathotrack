@@ -237,7 +237,6 @@
             android:layout_marginStart="32dp"
             android:layout_marginTop="8dp"
             android:layout_marginEnd="8dp"
-            android:onClick="salvarValores"
             android:text="@string/salvar"
             android:textColor="@android:color/white"
             app:backgroundTint="@color/duck_green"

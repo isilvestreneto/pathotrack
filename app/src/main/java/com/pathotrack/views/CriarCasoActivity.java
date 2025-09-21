@@ -1,7 +1,6 @@
 package com.pathotrack.views;
 
 import android.content.Context;
-import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -12,6 +11,7 @@ import android.widget.RadioGroup;
 import android.widget.TextView;
 
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.material.button.MaterialButton;
@@ -29,7 +29,10 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class CriarCasoActivity extends AppCompatActivity {
 
@@ -39,6 +42,7 @@ public class CriarCasoActivity extends AppCompatActivity {
     RadioGroup radioGroupSexo;
     MaterialAutoCompleteTextView etapaView;
     CasoPacienteDB db;
+    private final ExecutorService io = Executors.newSingleThreadExecutor();
     CasoPacienteDTO casoOrginal;
     public static final String KEY_MODO = "MODO";
     public static final int MODO_NOVO = 0;
@@ -65,6 +69,9 @@ public class CriarCasoActivity extends AppCompatActivity {
         editTextDataSolicitacao = findViewById(R.id.editTextDataSolicitacao);
         etapaView = findViewById(R.id.etEtapaAtual);
 
+        MaterialButton btnSalvar = findViewById(R.id.buttonSalvar);
+        btnSalvar.setOnClickListener(this::salvarValores);
+
         setupEtapaDropdown();
 
         Bundle bundle = getIntent().getExtras();
@@ -89,33 +96,43 @@ public class CriarCasoActivity extends AppCompatActivity {
         } else {
             titulo.setText(R.string.editarCaso);
 
-            casoOrginal = db.getCasoPacienteDAO().queryForId(casoId);
+            io.execute(() -> {
+                CasoPacienteDTO dto = db.getCasoPacienteDAO().queryForId(casoId);
+                runOnUiThread(() -> {
+                    casoOrginal = dto;
+                    if (casoOrginal != null) {
+                        setTextIfPresent(casoOrginal.getNumeroExame(), editTextNumeroExame);
+                        setTextIfPresent(casoOrginal.getPacienteNome(), editTextNomePaciente);
+                        setTextIfPresent(casoOrginal.getSus(), editTextSus);
 
-            if (pacienteId != -1L) {
-                pacienteIdParaSalvar = pacienteId;
-            } else {
-                pacienteIdParaSalvar = casoOrginal != null ? casoOrginal.getPacienteId() : null;
-            }
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            bindIsoToField(editTextDataNascimento, casoOrginal.getDataNascimento());
+                            bindIsoToField(editTextDataEntrega, casoOrginal.getDataEntrega());
+                            bindIsoToField(editTextDataSolicitacao, casoOrginal.getDataRequisicao());
+                        } else {
+                            setTextIfPresent(casoOrginal.getDataNascimento(), editTextDataNascimento);
+                            setTextIfPresent(casoOrginal.getDataEntrega(), editTextDataEntrega);
+                            setTextIfPresent(casoOrginal.getDataRequisicao(), editTextDataSolicitacao);
+                        }
 
-            setTextIfPresent(casoOrginal.getNumeroExame(), editTextNumeroExame);
-            setTextIfPresent(casoOrginal.getPacienteNome(), editTextNomePaciente);
-            setTextIfPresent(casoOrginal.getDataNascimento(), editTextDataNascimento);
-            setTextIfPresent(casoOrginal.getSus(), editTextSus);
-            setTextIfPresent(casoOrginal.getDataEntrega(), editTextDataEntrega);
-            setTextIfPresent(casoOrginal.getDataRequisicao(), editTextDataSolicitacao);
+                        String sexoStr = casoOrginal.getSexo().name();
+                        selectSexo(radioGroupSexo, sexoStr);
 
-            String sexoStr = casoOrginal.getSexo().name();
-            selectSexo(radioGroupSexo, sexoStr);
+                        Etapa etapa = parseEtapaFlex(String.valueOf(casoOrginal.getEtapa()));
+                        if (etapa != null) {
+                            etapaView.setText(etapa.label(etapaView), false);
+                            etapaView.setTag(etapa);
+                        } else {
+                            etapaView.setText(String.valueOf(casoOrginal.getEtapa()), false);
+                            etapaView.setTag(null);
+                        }
 
-            String etapaRaw = casoOrginal.getEtapa().toString();
-            Etapa etapa = parseEtapaFlex(etapaRaw);
-            if (etapa != null) {
-                etapaView.setText(etapa.label(etapaView), false);
-                etapaView.setTag(etapa);
-            } else {
-                etapaView.setText(etapaRaw);
-                etapaView.setTag(null);
-            }
+                        if (pacienteIdParaSalvar == null) {
+                            pacienteIdParaSalvar = casoOrginal.getPacienteId();
+                        }
+                    }
+                });
+            });
         }
 
         editTextDataNascimento.setOnClickListener(v -> {
@@ -281,7 +298,6 @@ public class CriarCasoActivity extends AppCompatActivity {
 
     public void salvarValores(View view) {
         String numeroExame = editTextNumeroExame.getText().toString();
-
         if (numeroExame.trim().isEmpty()) {
             UtilsAlert.mostrarAviso(this, R.string.faltou_entrar_com_o_n_mero_do_exame);
             editTextNumeroExame.requestFocus();
@@ -289,36 +305,9 @@ public class CriarCasoActivity extends AppCompatActivity {
         }
 
         String nomePaciente = editTextNomePaciente.getText().toString();
-
         if (nomePaciente.trim().isEmpty()) {
             UtilsAlert.mostrarAviso(this, R.string.faltou_entrar_com_o_nome_do_paciente);
             return;
-        }
-
-        String dataNascimento = editTextDataNascimento.getText().toString();
-
-        if (dataNascimento.trim().isEmpty()) {
-            UtilsAlert.mostrarAviso(this, R.string.faltou_entrar_com_a_data_de_nascimento);
-            editTextDataNascimento.requestFocus();
-            return;
-        }
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            try {
-                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/uuuu");
-                LocalDate nascimento = LocalDate.parse(dataNascimento.trim(), formatter);
-
-                if (nascimento.isAfter(LocalDate.now())) {
-                    UtilsAlert.mostrarAviso(this, R.string.data_nascimento_no_futuro);
-                    editTextDataNascimento.requestFocus();
-                    return;
-                }
-
-            } catch (DateTimeParseException e) {
-                UtilsAlert.mostrarAviso(this, R.string.data_invalida);
-                editTextDataNascimento.requestFocus();
-                return;
-            }
         }
 
         int checkedRadioButtonId = radioGroupSexo.getCheckedRadioButtonId();
@@ -329,70 +318,178 @@ public class CriarCasoActivity extends AppCompatActivity {
         }
 
         String numeroSus = editTextSus.getText().toString();
-
         if (numeroSus.trim().isEmpty()) {
             UtilsAlert.mostrarAviso(this, R.string.faltou_entrar_com_o_n_mero_do_sus);
             editTextSus.requestFocus();
             return;
         }
 
-        String dataSolicitacao = editTextDataSolicitacao.getText().toString();
-
-        if (dataSolicitacao.trim().isEmpty()) {
-            UtilsAlert.mostrarAviso(this, R.string.faltou_entrar_com_a_data_de_solicita_o);
-            editTextDataSolicitacao.requestFocus();
-            return;
-        }
-
-        String dataEntrega = editTextDataEntrega.getText().toString();
-
-        if (dataEntrega.trim().isEmpty()) {
-            UtilsAlert.mostrarAviso(this, R.string.faltou_entrar_com_a_data_de_entrega);
-            editTextDataEntrega.requestFocus();
-            return;
-        }
-
-
         Etapa etapaSelecionada = (Etapa) etapaView.getTag();
-
         if (etapaSelecionada == null) {
             UtilsAlert.mostrarAviso(this, R.string.faltou_entrar_com_a_etapa);
             etapaView.requestFocus();
             return;
         }
 
-        CasoPacienteDTO casoPacienteDTO = new CasoPacienteDTO(
+        String dnText = textOf(editTextDataNascimento);
+        String dsText = textOf(editTextDataSolicitacao);
+        String deText = textOf(editTextDataEntrega);
+
+        String dnTagIso = tagIsoOf(editTextDataNascimento);
+        String dsTagIso = tagIsoOf(editTextDataSolicitacao);
+        String deTagIso = tagIsoOf(editTextDataEntrega);
+
+        String dataNascimentoToSave;
+        String dataSolicitacaoToSave;
+        String dataEntregaToSave;
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            LocalDate birth = readLocalDateFromField(editTextDataNascimento);
+            if (birth == null) {
+                UtilsAlert.mostrarAviso(this, R.string.data_invalida);
+                editTextDataNascimento.requestFocus();
+                return;
+            }
+            if (birth.isAfter(LocalDate.now())) {
+                UtilsAlert.mostrarAviso(this, R.string.data_nascimento_no_futuro);
+                editTextDataNascimento.requestFocus();
+                return;
+            }
+            dataNascimentoToSave = birth.toString(); // ISO yyyy-MM-dd
+
+            LocalDate req = readLocalDateFromField(editTextDataSolicitacao);
+            if (req == null) {
+                UtilsAlert.mostrarAviso(this, R.string.faltou_entrar_com_a_data_de_solicita_o);
+                editTextDataSolicitacao.requestFocus();
+                return;
+            }
+            dataSolicitacaoToSave = req.toString();
+
+            LocalDate ent = readLocalDateFromField(editTextDataEntrega);
+            if (ent == null) {
+                UtilsAlert.mostrarAviso(this, R.string.faltou_entrar_com_a_data_de_entrega);
+                editTextDataEntrega.requestFocus();
+                return;
+            }
+            dataEntregaToSave = ent.toString();
+
+        } else {
+            try {
+                java.text.SimpleDateFormat BR = new java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.ROOT);
+                BR.setLenient(false);
+
+                java.util.Date dn = !dnTagIso.isEmpty()
+                        ? new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.ROOT).parse(dnTagIso)
+                        : BR.parse(dnText);
+                if (dn == null) throw new IllegalArgumentException("dn null");
+                dataNascimentoToSave = toIso(dn);
+
+                java.util.Date ds = !dsTagIso.isEmpty()
+                        ? new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.ROOT).parse(dsTagIso)
+                        : BR.parse(dsText);
+                if (ds == null) throw new IllegalArgumentException("ds null");
+                dataSolicitacaoToSave = toIso(ds);
+
+                java.util.Date de = !deTagIso.isEmpty()
+                        ? new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.ROOT).parse(deTagIso)
+                        : BR.parse(deText);
+                if (de == null) throw new IllegalArgumentException("de null");
+                dataEntregaToSave = toIso(de);
+
+            } catch (Exception e) {
+                UtilsAlert.mostrarAviso(this, R.string.data_invalida);
+                return;
+            }
+        }
+
+        final CasoPacienteDTO dto = new CasoPacienteDTO(
                 numeroExame.trim(),
-                dataSolicitacao.trim(),
-                dataEntrega.trim(),
+                dataSolicitacaoToSave,
+                dataEntregaToSave,
                 etapaSelecionada,
                 pacienteIdParaSalvar,
                 nomePaciente.trim(),
-                dataNascimento.trim(),
+                dataNascimentoToSave,
                 Sexo.fromRadioId(checkedRadioButtonId),
                 numeroSus.trim(),
                 ""
         );
 
-        if (modo == MODO_NOVO) {
-            Long novoId = db.getCasoPacienteDAO().insert(casoPacienteDTO);
+        final boolean isEdicao = (modo == MODO_EDITAR && casoOrginal != null && casoOrginal.getCasoId() != null);
 
-            if (novoId <= 0) {
-                UtilsAlert.mostrarAviso(this, R.string.houve_um_problema_ao_salvar_o_caso);
-                return;
+        io.execute(() -> {
+            try {
+                long resultId;
+                if (isEdicao) {
+                    dto.setCasoId(casoOrginal.getCasoId());
+                    int rows = db.getCasoPacienteDAO().update(dto);
+                    runOnUiThread(() -> {
+                        if (rows > 0) {
+                            setResult(RESULT_OK);
+                            UtilsAlert.mostrarAviso(this, R.string.caso_salvo_com_sucesso);
+                            finish();
+                        } else {
+                            UtilsAlert.mostrarAviso(this, R.string.houve_um_problema_ao_salvar_o_caso);
+                        }
+                    });
+                } else {
+                    resultId = db.getCasoPacienteDAO().insert(dto);
+                    dto.setCasoId(resultId);
+                    runOnUiThread(() -> {
+                        if (resultId > 0) {
+                            setResult(RESULT_OK);
+                            UtilsAlert.mostrarAviso(this, R.string.caso_salvo_com_sucesso);
+                            finish();
+                        } else {
+                            UtilsAlert.mostrarAviso(this, R.string.houve_um_problema_ao_salvar_o_caso);
+                        }
+                    });
+                }
+            } catch (Exception e) {
+                runOnUiThread(() ->
+                        UtilsAlert.mostrarAviso(this, R.string.houve_um_problema_ao_salvar_o_caso));
             }
-            casoPacienteDTO.setCasoId(novoId);
+        });
+    }
 
-        } else {
-            casoPacienteDTO.setCasoId(casoOrginal.getCasoId());
-            db.getCasoPacienteDAO().update(casoPacienteDTO);
+    private static String textOf(EditText et) {
+        return et.getText() == null ? "" : et.getText().toString().trim();
+    }
+
+    private static String tagIsoOf(EditText et) {
+        Object tag = et.getTag();
+        return tag == null ? "" : String.valueOf(tag).trim();
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private static LocalDate parseLocalDateFlexible(String display, String isoMaybe) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+
+            Locale L = java.util.Locale.ROOT;
+            DateTimeFormatter BR = null;
+            BR = DateTimeFormatter.ofPattern("dd/MM/uuuu", L);
+
+            if (!isoMaybe.isEmpty()) {
+                try {
+                    return java.time.LocalDate.parse(isoMaybe);
+                } catch (Exception ignored) {
+                }
+            }
+            if (!display.isEmpty()) {
+                try {
+                    return java.time.LocalDate.parse(display, BR);
+                } catch (Exception ignored) {
+                }
+            }
+            return null;
         }
+        return null;
 
-        setResult(RESULT_OK);
+    }
 
-        UtilsAlert.mostrarAviso(this, R.string.caso_salvo_com_sucesso);
-
-        finish();
+    private static String toIso(java.util.Date d) {
+        java.text.SimpleDateFormat out = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.ROOT);
+        return out.format(d);
     }
 
     public void limparCampos(View view) {
@@ -403,8 +500,61 @@ public class CriarCasoActivity extends AppCompatActivity {
         editTextSus.setText(null);
         editTextDataSolicitacao.setText(null);
         etapaView.setText(null, false);
+        editTextDataNascimento.setTag(null);
+        editTextDataSolicitacao.setTag(null);
+        editTextDataEntrega.setTag(null);
         editTextNumeroExame.requestFocus();
         UtilsAlert.mostrarAviso(this, R.string.as_entradas_foram_apagadas);
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private static String isoToDisplay(String iso) {
+        DateTimeFormatter BR = DateTimeFormatter.ofPattern("dd/MM/uuuu", Locale.ROOT);
+        return LocalDate.parse(iso).format(BR);
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private static void bindIsoToField(EditText et, String iso) {
+        if (iso == null || iso.trim().isEmpty()) {
+            et.setTag("");
+            et.setText("");
+            return;
+        }
+        et.setTag(iso.trim());                 // guarda ISO
+        et.setText(isoToDisplay(iso.trim()));  // mostra BR
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    @Nullable
+    private static LocalDate readLocalDateFromField(EditText et) {
+        String isoMaybe = tagIsoOf(et);
+        String display = textOf(et);
+
+        if (!isoMaybe.isEmpty()) {
+            try {
+                return LocalDate.parse(isoMaybe);
+            } catch (Exception ignored) {
+            }
+        }
+        if (!display.isEmpty()) {
+            try {
+                DateTimeFormatter BR = DateTimeFormatter.ofPattern("dd/MM/uuuu", Locale.ROOT);
+                return LocalDate.parse(display, BR);
+            } catch (Exception ignored) {
+            }
+            try {
+                return LocalDate.parse(display);
+            } catch (Exception ignored) {
+            }
+        }
+        return null;
+    }
+
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        io.shutdown();
     }
 
 
