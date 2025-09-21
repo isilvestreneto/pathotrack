@@ -1,12 +1,9 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
 
-    <style name="Theme.Android" parent="Theme.Material3.Light">
+    <style name="Theme.Android" parent="Theme.Material3.DayNight">
         <item name="colorPrimary">@color/duck_green</item>
         <item name="colorOnPrimary">@android:color/white</item>
-
-        <!-- Status bar -->
-        <item name="android:statusBarColor">@color/duck_green</item>
-        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
 
         <!-- ActionBar (se estiver usando) -->
         <item name="actionBarStyle">@style/Widget.PathoTrack.ActionBar</item>
