@@ -5,25 +5,21 @@
         <item name="colorOnPrimary">@android:color/white</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
 
-        <!-- ActionBar (se estiver usando) -->
         <item name="actionBarStyle">@style/Widget.PathoTrack.ActionBar</item>
         <item name="actionBarTheme">@style/ThemeOverlay.PathoTrack.ActionBar</item>
     </style>
 
-    <!-- Estilo para a ActionBar -->
     <style name="Widget.PathoTrack.ActionBar" parent="@style/Widget.AppCompat.ActionBar">
         <item name="background">@color/duck_green</item>
         <item name="titleTextStyle">@style/TextAppearance.PathoTrack.ActionBar.Title</item>
     </style>
 
-    <!-- Overlay para menus e ícones dentro da ActionBar -->
     <style name="ThemeOverlay.PathoTrack.ActionBar" parent="ThemeOverlay.AppCompat.ActionBar">
         <item name="android:textColorPrimary">@android:color/white</item>
         <item name="android:itemTextAppearance">@style/TextAppearance.PathoTrack.ActionBar.Title
         </item>
     </style>
 
-    <!-- Texto do título -->
     <style name="TextAppearance.PathoTrack.ActionBar.Title" parent="TextAppearance.AppCompat.Widget.ActionBar.Title">
         <item name="android:textColor">@android:color/white</item>
     </style>
